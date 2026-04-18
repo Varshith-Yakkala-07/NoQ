@@ -6,6 +6,8 @@ import { useEffect, useState } from "react";
 import { API } from "../../lib/api";
 import { Animated } from "react-native";
 import { useRef } from "react";
+import { Alert } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export default function Profile() {
 
@@ -74,6 +76,31 @@ export default function Profile() {
   );
 }
 
+const handleLogout = () => {
+    Alert.alert(
+      "Logout",
+      "Do you really want to logout?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Logout",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await AsyncStorage.removeItem("token");
+              await AsyncStorage.removeItem("user");
+
+              router.replace("/(auth)/login");
+            } catch (err) {
+              console.log("Logout error:", err);
+            }
+          },
+        },
+      ]
+    );
+  };
+
+
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       
@@ -114,7 +141,7 @@ export default function Profile() {
       </View>
 
       {/* Logout */}
-      <TouchableOpacity style={styles.logoutBtn}>
+      <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
         <Ionicons name="log-out-outline" size={22} color="#fff" />
         <Text style={styles.logoutText}>Logout</Text>
       </TouchableOpacity>
