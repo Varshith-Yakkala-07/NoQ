@@ -1,7 +1,7 @@
 import { View, Image, StyleSheet, Animated } from "react-native";
 import { useRouter } from "expo-router";
 import { useEffect, useRef } from "react";
-import COLORS from "../constants/colors";
+import COLORS from "../constants/colors"; 
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { jwtDecode } from "jwt-decode";
 

@@ -2,39 +2,77 @@ import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView } from "rea
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import COLORS from "../../constants/colors";
-import { Alert } from "react-native";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useEffect, useState } from "react";
+import { API } from "../../lib/api";
+import { Animated } from "react-native";
+import { useRef } from "react";
 
 export default function Profile() {
 
-  // logout handler
-  const handleLogout = () => {
-  Alert.alert(
-    "Logout",
-    "Do you really want to logout?",
-    [
-      {
-        text: "Cancel",
-        style: "cancel",
-      },
-      {
-        text: "Logout",
-        style: "destructive",
-        onPress: async () => {
-          try {
-            await AsyncStorage.removeItem("token");
-            await AsyncStorage.removeItem("user");
+  type UserType = {
+  username: string;
+  email: string;
+  profileImage?: string;
+  hostel?: string;
+  phone?: string;
+  };
 
-            router.replace("/(auth)/login");
-          } catch (err) {
-            console.log("Logout error:", err);
-          }
-        },
-      },
-    ]
+  const [user, setUser] = useState<UserType | null>(null);
+  const [loading, setLoading] = useState(true);
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const scaleAnim = useRef(new Animated.Value(0.8)).current;
+
+  useEffect(() => {
+  Animated.parallel([
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 500,
+      useNativeDriver: true,
+    }),
+    Animated.spring(scaleAnim, {
+      toValue: 1,
+      friction: 5,
+      useNativeDriver: true,
+    }),
+  ]).start();
+
+  const fetchProfile = async () => {
+    try {
+      const res = await API.get("/profile");
+      setUser(res.data);
+    } catch (err) {
+      console.log("Profile error:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  fetchProfile();
+}, []);
+
+  if (loading) {
+  return (
+    <View style={styles.loadingContainer}>
+      <Animated.View
+        style={{
+          opacity: fadeAnim,
+          transform: [{ scale: scaleAnim }],
+          alignItems: "center",
+        }}
+      >
+        <Image
+          source={require("../../assets/images/logo.png")}
+          style={styles.loadingImage}
+          resizeMode="contain"
+        />
+
+        <Text style={styles.loadingText}>
+          Loading your profile...
+        </Text>
+      </Animated.View>
+    </View>
   );
-};
-
+}
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
@@ -43,13 +81,14 @@ export default function Profile() {
       <View style={styles.header}>
         <Image
           source={{
-            uri: "https://i.pravatar.cc/150?img=12",
+          uri: user?.profileImage || "https://i.pravatar.cc/150?img=12",
           }}
           style={styles.avatar}
         />
 
-        <Text style={styles.name}>Sreekar Chowdary</Text>
-        <Text style={styles.email}>sreekar@email.com</Text>
+
+        <Text style={styles.name}>{user?.username || "User"}</Text>
+        <Text style={styles.email}>{user?.email || ""}</Text>
       </View>
 
       {/* Menu Section */}
@@ -75,7 +114,7 @@ export default function Profile() {
       </View>
 
       {/* Logout */}
-      <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
+      <TouchableOpacity style={styles.logoutBtn}>
         <Ionicons name="log-out-outline" size={22} color="#fff" />
         <Text style={styles.logoutText}>Logout</Text>
       </TouchableOpacity>
@@ -157,4 +196,23 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "700",
   },
+
+  loadingContainer: {
+  flex: 1,
+  justifyContent: "center",
+  alignItems: "center",
+  backgroundColor: COLORS.background,
+},
+
+loadingImage: {
+  width: 140,
+  height: 140,
+  marginBottom: 16,
+},
+
+loadingText: {
+  fontSize: 14,
+  color: COLORS.textSecondary,
+  fontWeight: "500",
+},
 });
