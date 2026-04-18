@@ -197,14 +197,20 @@ if (!email.trim()) {
 
       setIsLoading(true);
 
+
       try {
-    await API.post("/auth/register", {
+
+        console.log("Sending request...");
+
+    const res = await API.post("/auth/register", {
       username: name,
       email : email.trim().toLowerCase(),
       password,
       hostel,
       phone,
     });
+
+    console.log("Response:", res.data);
 
  router.push({
       pathname: "/(auth)/otp",
@@ -220,9 +226,12 @@ if (!email.trim()) {
      } catch (err: any) {
     const message =
       err?.response?.data?.message || "Signup failed";
+      console.log("ERROR FULL:", err);
+    console.log("ERROR RESPONSE:", err?.response?.data);
 
     alert(message);
       } finally {
+        console.log("Finished request");
         setIsLoading(false);
       }
     };
