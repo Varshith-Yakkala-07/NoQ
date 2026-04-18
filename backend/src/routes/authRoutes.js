@@ -101,7 +101,7 @@ router.post("/register", async (req, res) => {
     }
 
     // ================= CREATE USER =================
-    const profileImage = `https://api.dicebear.com/9.x/lorelei-neutral/svg?seed=${username}`;
+    const profileImage = `https://api.dicebear.com/9.x/lorelei-neutral/png?seed=${username}`;
 
     const user = new User({
       username,
