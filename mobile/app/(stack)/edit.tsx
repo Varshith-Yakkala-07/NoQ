@@ -176,8 +176,9 @@ export default function EditProfile() {
           </Text>
 
           <Text style={[styles.label, { color: COLORS.textPrimary }]}>
-            Phone
+            Phone Number
           </Text>
+    
           <TextInput
             style={[
               styles.input,
@@ -192,6 +193,7 @@ export default function EditProfile() {
             defaultValue={user?.phone || "Phone number"}
             keyboardType="phone-pad"
           />
+          
 
           <Text style={[styles.label, { color: COLORS.textPrimary }]}>
             Hostel

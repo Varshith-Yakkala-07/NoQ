@@ -15,6 +15,16 @@ const generateToken = (userId) => {
     return jwt.sign({userId}, process.env.JWT_SECRET, { expiresIn : "15d"});
 }
 
+const normalizePhone = (phone) => {
+  if (!phone) return "";
+
+  return phone
+    .toString()
+    .trim()
+    .replace(/^\+91/, "")   // remove +91 prefix
+    .replace(/\D/g, "");    // remove anything non-digit
+};
+
 
 router.post("/register", async (req, res) => {
   try {
@@ -26,7 +36,7 @@ router.post("/register", async (req, res) => {
     email = email?.trim().toLowerCase();
     password = password?.trim();
     hostel = hostel?.trim();
-    phone = phone?.trim();
+    phone = normalizePhone(phone);
     otp = otp?.trim();
 
     //all fields check
@@ -48,6 +58,13 @@ router.post("/register", async (req, res) => {
     const btRegex = /^bt[a-z0-9]{8}@iiitn\.ac\.in$/;
     if (!btRegex.test(email)) {
       return res.status(400).json({ message: "Only valid IIITN BT emails allowed" });
+    }
+
+    //phone number check
+    if (!/^[6-9]\d{9}$/.test(phone)) {
+      return res.status(400).json({
+      message: "Invalid phone number",
+    });
     }
 
     // 5. Existing user
