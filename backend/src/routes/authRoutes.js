@@ -74,6 +74,7 @@ router.post("/register", async (req, res) => {
     // 5. Existing user
     const existingUser = await User.findOne({ email });
     if (existingUser) {
+      console.log("User already exists");
       return res.status(400).json({ message: "User already exists" });
     }
 
