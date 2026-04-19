@@ -1,6 +1,8 @@
 import express from "express";
 import { protect } from "../middleware/authMiddleware.js";
-import User from "../models/User.js"
+import User from "../models/User.js";
+import cloudinary from "../config/cloudinary.js";
+import upload from "../middleware/multer.js";
 
 const router = express.Router();
 
@@ -13,7 +15,7 @@ router.get("/", protect, async (req,res) => {
     }
 });
 
-router.put("/update", protect, async (req,res) => {
+router.put("/update", protect, upload.single("profileImage"), async (req,res) => {
     try {
         const {username, phone, hostel, password} = req.body;
 
@@ -32,6 +34,7 @@ router.put("/update", protect, async (req,res) => {
 
         if (password && password.trim()) {
     const newPass = password.trim();
+    
 
     if (newPass.length < 6) {
         return res.status(400).json({
@@ -41,6 +44,26 @@ router.put("/update", protect, async (req,res) => {
 
     user.password = newPass; // hashed in pre-save (good)
 }
+
+
+    // ✅ IMAGE UPLOAD PART
+      if (req.file) {
+        const uploadResult = await new Promise((resolve, reject) => {
+          const stream = cloudinary.uploader.upload_stream(
+            { folder: "profiles" },
+            (error, result) => {
+              if (error) reject(error);
+              else resolve(result);
+            }
+          );
+
+          stream.end(req.file.buffer);
+        });
+
+
+        const result = uploadResult;
+        user.profileImage = result.secure_url;
+      }
 
         await user.save();
 

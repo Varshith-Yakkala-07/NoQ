@@ -17,6 +17,7 @@ import COLORS from "../../constants/colors";
 import { useEffect, useState, useRef } from "react";
 import { API } from "../../lib/api";
 import { Animated } from "react-native";
+import * as ImagePicker from "expo-image-picker";
 
 type UserType = {
   username: string;
@@ -36,6 +37,7 @@ export default function EditProfile() {
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [image, setImage] = useState<string | null>(null);
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(0.8)).current;
@@ -43,6 +45,25 @@ export default function EditProfile() {
   const handleBack = () => {
     router.replace("/(tabs)/profile");
   };
+
+  const pickImage = async () => {
+  const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+  if (!permission.granted) {
+    Alert.alert("Permission required", "Allow gallery access");
+    return;
+  }
+
+  const result = await ImagePicker.launchImageLibraryAsync({
+    mediaTypes: ImagePicker.MediaTypeOptions.Images,
+    allowsEditing: true,
+    quality: 0.8,
+  });
+
+  if (!result.canceled) {
+    setImage(result.assets[0].uri);
+  }
+};
 
   useEffect(() => {
     Animated.parallel([
@@ -108,18 +129,42 @@ export default function EditProfile() {
     try {
       setSaving(true);
 
-      await API.put("/profile/update", updateData);
+      const formData = new FormData();
 
-      Alert.alert("Success", "Profile updated successfully");
+    formData.append("username", cleanUsername);
+    formData.append("phone", cleanPhone);
+    formData.append("hostel", (hostel || user?.hostel || ""));
 
-      router.replace("/(tabs)/profile");
-    } catch (err: any) {
-      console.log(err?.response?.data || err);
-      Alert.alert("Error", "Update failed");
-    } finally {
-      setSaving(false);
+    if (cleanPassword) {
+      formData.append("password", cleanPassword);
     }
-  };
+
+    if (image) {
+
+      const fileName = image.split("/").pop() || "photo.jpg";
+      const fileType = fileName.split(".").pop();
+      formData.append("profileImage", {
+        uri: image,
+        name: fileName,
+        type: `image/${fileType || "jpeg"}`,
+      } as any);
+    }
+
+      await API.put("/profile/update", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
+
+    Alert.alert("Success", "Profile updated");
+    router.replace("/(tabs)/profile");
+  } catch (err) {
+    console.log(err);
+    Alert.alert("Error", "Update failed");
+  } finally {
+    setSaving(false);
+  }
+};
 
   if (loading) {
     return (
@@ -167,16 +212,14 @@ export default function EditProfile() {
   <View style={styles.avatarWrapper}>
     
     <Image
-      source={{
-        uri:
-          user?.profileImage ||
-          "https://api.dicebear.com/7.x/avataaars/png",
-      }}
-      style={styles.avatar}
-    />
+  source={{
+    uri: image || user?.profileImage || "https://api.dicebear.com/7.x/avataaars/png",
+  }}
+  style={styles.avatar}
+/>
 
-    {/* CAMERA ICON (future upload feature) */}
-    <TouchableOpacity style={styles.cameraBtn}>
+    
+    <TouchableOpacity style={styles.cameraBtn} onPress={pickImage}>
       <Ionicons name="camera" size={18} color="#fff" />
     </TouchableOpacity>
 
