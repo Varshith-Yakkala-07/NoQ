@@ -210,7 +210,10 @@ router.post("/forgotpassword", async (req,res) => {
 
         //user existence check
         const user = await User.findOne({email});
-        if(!user) return res.status(400).json({message : "Invalid credentials"});
+        if(!user) {
+          console.log("No user found with this mail id");
+          return res.status(400).json({message : "Invalid credentials"});
+        }
 
         // ================= SEND OTP =================
         if (!otp) {
