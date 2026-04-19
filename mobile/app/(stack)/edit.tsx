@@ -37,12 +37,15 @@ export default function EditProfile() {
     profileImage?: string;
     hostel?: string;
     phone?: string;
+    password?: string;
     };
   
     const [user, setUser] = useState<UserType | null>(null);
     const [loading, setLoading] = useState(true);
     const fadeAnim = useRef(new Animated.Value(0)).current;
     const scaleAnim = useRef(new Animated.Value(0.8)).current;
+    const [hostel, setHostel] = useState(user?.hostel || "");
+    const [password, setPassword] = useState("");
   
     useEffect(() => {
     Animated.parallel([
@@ -198,19 +201,57 @@ export default function EditProfile() {
           <Text style={[styles.label, { color: COLORS.textPrimary }]}>
             Hostel
           </Text>
-          <TextInput
+
+          <TouchableOpacity
             style={[
-              styles.input,
-              {
-                backgroundColor: COLORS.inputBackground,
-                borderColor: COLORS.border,
-                color: COLORS.textPrimary,
-              },
-            ]}
-            placeholder="Enter hostel"
-            defaultValue={user?.hostel || "Hostel"}
-            placeholderTextColor={COLORS.placeholderText}
-          />
+            styles.input,
+          {
+            backgroundColor: COLORS.inputBackground,
+            borderColor: COLORS.border,
+            justifyContent: "center",
+          },
+          ]}
+  onPress={() => {
+    Alert.alert("Select Hostel", "", [
+      {
+        text: "Dia Hostel",
+        onPress: () => setHostel("Dia Hostel"),
+      },
+      {
+        text: "College Hostel",
+        onPress: () => setHostel("College Hostel"),
+      },
+      {
+        text: "Cancel",
+        style: "cancel",
+      },
+    ]);
+  }}
+>
+  <Text style={{ color: COLORS.textPrimary }}>
+    {hostel || "Select Hostel"}
+  </Text>
+</TouchableOpacity>
+
+<Text style={[styles.label, { color: COLORS.textPrimary }]}>
+  Change Password
+</Text>
+
+<TextInput
+  style={[
+    styles.input,
+    {
+      backgroundColor: COLORS.inputBackground,
+      borderColor: COLORS.border,
+      color: COLORS.textPrimary,
+    },
+  ]}
+  placeholder="New password"
+  placeholderTextColor={COLORS.placeholderText}
+  secureTextEntry
+  value={password}
+  onChangeText={setPassword}
+/>
 
           {/* Save Button */}
           <TouchableOpacity
