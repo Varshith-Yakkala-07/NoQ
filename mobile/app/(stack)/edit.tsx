@@ -9,45 +9,44 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
+  Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import { lightColors, darkColors } from "@/constants/colors";
 import COLORS from "../../constants/colors";
 import { useEffect, useState } from "react";
 import { API } from "../../lib/api";
 import { Animated } from "react-native";
 import { useRef } from "react";
-import { Alert } from "react-native";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+
+type UserType = {
+  username: string;
+  email: string;
+  profileImage?: string;
+  hostel?: string;
+  phone?: string;
+};
 
 export default function EditProfile() {
+  const [user, setUser] = useState<UserType | null>(null);
 
-  //const [loading, setLoading] = useState(false);
+  // form states (IMPORTANT: do NOT bind directly to user)
+  const [username, setUsername] = useState("");
+  const [phone, setPhone] = useState("");
+  const [hostel, setHostel] = useState("");
+  const [password, setPassword] = useState("");
 
-  // ✅ Use replace instead of back() to avoid flicker
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const scaleAnim = useRef(new Animated.Value(0.8)).current;
+
   const handleBack = () => {
     router.replace("/(tabs)/profile");
   };
 
-
-  type UserType = {
-    username: string;
-    email: string;
-    profileImage?: string;
-    hostel?: string;
-    phone?: string;
-    password?: string;
-    };
-  
-    const [user, setUser] = useState<UserType | null>(null);
-    const [loading, setLoading] = useState(true);
-    const fadeAnim = useRef(new Animated.Value(0)).current;
-    const scaleAnim = useRef(new Animated.Value(0.8)).current;
-    const [hostel, setHostel] = useState(user?.hostel || "");
-    const [password, setPassword] = useState("");
-  
-    useEffect(() => {
+  useEffect(() => {
     Animated.parallel([
       Animated.timing(fadeAnim, {
         toValue: 1,
@@ -60,22 +59,75 @@ export default function EditProfile() {
         useNativeDriver: true,
       }),
     ]).start();
-  
+
     const fetchProfile = async () => {
       try {
         const res = await API.get("/profile");
-        setUser(res.data);
+        const data = res.data;
+
+        setUser(data);
+
+        // initialize form values
+        setUsername(data.username || "");
+        setPhone(data.phone || "");
+        setHostel(data.hostel || "");
       } catch (err) {
-        console.log("Profile error:", err);
+        console.log(err);
       } finally {
         setLoading(false);
       }
     };
-  
+
     fetchProfile();
   }, []);
-  
-    if (loading) {
+
+  const handleSave = async () => {
+    const cleanUsername = username.trim();
+    const cleanPhone = phone.replace(/\D/g, "");
+    const cleanPassword = password.trim();
+
+    // validations
+    if (cleanUsername.length < 3) {
+      return Alert.alert("Error", "Username must be at least 3 characters");
+    }
+
+    if (!/^[6-9]\d{9}$/.test(cleanPhone)) {
+  return Alert.alert("Error", "Enter valid Indian phone number");
+}
+
+    if (cleanPassword && cleanPassword.length < 6) {
+      return Alert.alert("Error", "Password must be at least 6 characters");
+    }
+
+    // build payload (ONLY send required fields)
+    const updateData: any = {
+      username: cleanUsername,
+      phone: cleanPhone,
+      hostel: hostel || user?.hostel,
+    };
+
+    // only send password if user entered it
+    if (cleanPassword.length > 0) {
+      updateData.password = cleanPassword;
+    }
+
+    try {
+      setSaving(true);
+
+      await API.put("/profile/update", updateData);
+
+      Alert.alert("Success", "Profile updated");
+
+      router.replace("/(tabs)/profile");
+    } catch (err: any) {
+      console.log(err?.response?.data || err);
+      Alert.alert("Error", "Update failed");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (loading) {
     return (
       <View style={styles.loadingContainer}>
         <Animated.View
@@ -90,29 +142,22 @@ export default function EditProfile() {
             style={styles.loadingImage}
             resizeMode="contain"
           />
-  
-          <Text style={styles.loadingText}>
-            Loading your profile...
-          </Text>
+          <Text style={styles.loadingText}>Loading profile...</Text>
         </Animated.View>
       </View>
     );
   }
-  
 
   return (
     <KeyboardAvoidingView
       style={{ flex: 1 }}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
-      <ScrollView
-        style={[styles.container, { backgroundColor: COLORS.background }]}
-        showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
-      >
+      <ScrollView style={styles.container} keyboardShouldPersistTaps="handled">
+
         {/* Header */}
-        <View style={[styles.header, { backgroundColor: COLORS.primary }]}>
-          <TouchableOpacity style={styles.backBtn} onPress={handleBack}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={handleBack}>
             <Ionicons name="arrow-back" size={24} color="#fff" />
           </TouchableOpacity>
 
@@ -121,274 +166,119 @@ export default function EditProfile() {
 
         {/* Avatar */}
         <View style={styles.avatarSection}>
-          <View style={styles.avatarWrapper}>
-            <Image
-              source={{
-                uri: user?.profileImage || "https://api.dicebear.com/7.x/avataaars/png?seed=sreekar",
-              }}
-              style={[styles.avatar, { borderColor: COLORS.primary }]}
-            />
-            <TouchableOpacity
-              style={[styles.cameraBtn, { backgroundColor: COLORS.primary }]}
-            >
-              <Ionicons name="camera" size={16} color="#fff" />
-            </TouchableOpacity>
-          </View>
-          <Text style={[styles.changePhotoText, { color: COLORS.primary }]}>
-            Change Photo
-          </Text>
-        </View>
-
-        {/* Form */}
-        <View style={styles.form}>
-          <Text style={[styles.label, { color: COLORS.textPrimary }]}>
-            Username
-          </Text>
-          <TextInput
-            style={[
-              styles.input,
-              {
-                backgroundColor: COLORS.inputBackground,
-                borderColor: COLORS.border,
-                color: COLORS.textPrimary,
-              },
-            ]}
-            placeholder="Enter Username"
-            placeholderTextColor={COLORS.placeholderText}
-            defaultValue={user?.username || "User"}
-          />
-
-          <Text style={[styles.label, { color: COLORS.textPrimary }]}>
-            Email ID
-          </Text>
-          <TextInput
-            style={[
-              styles.input,
-              styles.disabledInput,
-              {
-                backgroundColor: COLORS.inputBackground,
-                borderColor: COLORS.border,
-                color: COLORS.placeholderText,
-              },
-            ]}
-            value={user?.email || ""}
-            editable={false}
-          />
-          <Text style={[styles.hint, { color: COLORS.placeholderText }]}>
-            Email cannot be changed
-          </Text>
-
-          <Text style={[styles.label, { color: COLORS.textPrimary }]}>
-            Phone Number
-          </Text>
-    
-          <TextInput
-            style={[
-              styles.input,
-              {
-                backgroundColor: COLORS.inputBackground,
-                borderColor: COLORS.border,
-                color: COLORS.textPrimary,
-              },
-            ]}
-            placeholder="Enter phone number"
-            placeholderTextColor={COLORS.placeholderText}
-            defaultValue={user?.phone || "Phone number"}
-            keyboardType="phone-pad"
-          />
-          
-
-          <Text style={[styles.label, { color: COLORS.textPrimary }]}>
-            Hostel
-          </Text>
-
-          <TouchableOpacity
-            style={[
-            styles.input,
-          {
-            backgroundColor: COLORS.inputBackground,
-            borderColor: COLORS.border,
-            justifyContent: "center",
-          },
-          ]}
-  onPress={() => {
-    Alert.alert("Select Hostel", "", [
-      {
-        text: "Dia Hostel",
-        onPress: () => setHostel("Dia Hostel"),
-      },
-      {
-        text: "College Hostel",
-        onPress: () => setHostel("College Hostel"),
-      },
-      {
-        text: "Cancel",
-        style: "cancel",
-      },
-    ]);
-  }}
->
-  <Text style={{ color: COLORS.textPrimary }}>
-    {hostel || "Select Hostel"}
-  </Text>
-</TouchableOpacity>
-
-<Text style={[styles.label, { color: COLORS.textPrimary }]}>
-  Change Password
-</Text>
-
-<TextInput
-  style={[
-    styles.input,
-    {
-      backgroundColor: COLORS.inputBackground,
-      borderColor: COLORS.border,
-      color: COLORS.textPrimary,
-    },
-  ]}
-  placeholder="New password"
-  placeholderTextColor={COLORS.placeholderText}
-  secureTextEntry
-  value={password}
-  onChangeText={setPassword}
-/>
-
-          {/* Save Button */}
-          <TouchableOpacity
-            style={[styles.saveBtn, { backgroundColor: COLORS.primary }]}
-            onPress={() => {
-              setLoading(true);
-              setTimeout(() => {
-                setLoading(false);
-                // ✅ Go back smoothly after saving
-                router.replace("/(tabs)/profile");
-              }, 1000);
+          <Image
+            source={{
+              uri:
+                user?.profileImage ||
+                "https://api.dicebear.com/7.x/avataaars/png",
             }}
-            activeOpacity={0.85}
-          >
-            {loading ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <Text style={styles.saveText}>Save Changes</Text>
-            )}
-          </TouchableOpacity>
+            style={styles.avatar}
+          />
         </View>
+
+        {/* Username */}
+        <Text style={styles.label}>Username</Text>
+        <TextInput
+          style={styles.input}
+          value={username}
+          onChangeText={setUsername}
+        />
+
+        {/* Email (readonly) */}
+        <Text style={styles.label}>Email</Text>
+        <TextInput style={styles.inputDisabled} value={user?.email} editable={false} />
+
+        {/* Phone */}
+        <Text style={styles.label}>Phone</Text>
+        <TextInput
+          style={styles.input}
+          value={phone}
+          onChangeText={setPhone}
+          keyboardType="phone-pad"
+        />
+
+        {/* Hostel Dropdown (simple alert-based) */}
+        <Text style={styles.label}>Hostel</Text>
+        <TouchableOpacity
+          style={styles.input}
+          onPress={() =>
+            Alert.alert("Select Hostel", "", [
+              { text: "Dia Hostel", onPress: () => setHostel("Dia Hostel") },
+              { text: "College Hostel", onPress: () => setHostel("College Hostel") },
+              { text: "Cancel", style: "cancel" },
+            ])
+          }
+        >
+          <Text>{hostel || "Select Hostel"}</Text>
+        </TouchableOpacity>
+
+        {/* Password */}
+        <Text style={styles.label}>Change Password</Text>
+        <TextInput
+          style={styles.input}
+          value={password}
+          onChangeText={setPassword}
+          secureTextEntry
+          placeholder="New password (optional)"
+        />
+
+        {/* Save */}
+        <TouchableOpacity style={styles.saveBtn} onPress={handleSave}>
+          {saving ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text style={styles.saveText}>Save Changes</Text>
+          )}
+        </TouchableOpacity>
       </ScrollView>
     </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
+  container: { flex: 1, padding: 20 },
   header: {
-    paddingTop: 55,
-    paddingBottom: 24,
+    flexDirection: "row",
     alignItems: "center",
-    borderBottomLeftRadius: 28,
-    borderBottomRightRadius: 28,
-    position: "relative",
+    backgroundColor: COLORS.primary,
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 20,
   },
-  backBtn: {
-    position: "absolute",
-    left: 18,
-    top: 55,
-    padding: 4,
-  },
-  themeToggle: {
-    position: "absolute",
-    right: 18,
-    top: 55,
-    padding: 4,
-  },
-  headerTitle: {
-    color: "#fff",
-    fontSize: 20,
-    fontWeight: "700",
-  },
-  avatarSection: {
-    alignItems: "center",
-    marginTop: 24,
-    marginBottom: 4,
-  },
-  avatarWrapper: {
-    position: "relative",
-  },
-  avatar: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    borderWidth: 3,
-  },
-  cameraBtn: {
-    position: "absolute",
-    bottom: 2,
-    right: 2,
-    padding: 7,
-    borderRadius: 20,
-    borderWidth: 2,
-    borderColor: "#fff",
-  },
-  changePhotoText: {
-    marginTop: 10,
-    fontSize: 13,
-    fontWeight: "600",
-  },
-  form: {
-    padding: 20,
-    paddingTop: 16,
-  },
-  label: {
-    fontSize: 13,
-    fontWeight: "600",
-    marginBottom: 7,
-    marginTop: 4,
-  },
+  headerTitle: { color: "#fff", fontSize: 18, marginLeft: 12 },
+
+  avatarSection: { alignItems: "center", marginBottom: 20 },
+  avatar: { width: 100, height: 100, borderRadius: 50 },
+
+  label: { fontWeight: "600", marginTop: 10 },
   input: {
-    borderRadius: 14,
-    paddingHorizontal: 15,
-    height: 52,
-    marginBottom: 6,
     borderWidth: 1,
-    fontSize: 15,
+    borderRadius: 10,
+    padding: 12,
+    marginTop: 6,
   },
-  disabledInput: {
-    opacity: 0.65,
-  },
-  hint: {
-    fontSize: 11,
-    marginBottom: 14,
-    marginLeft: 4,
-  },
-  saveBtn: {
-    paddingVertical: 16,
-    borderRadius: 16,
-    alignItems: "center",
-    marginTop: 14,
-  },
-  saveText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "700",
+  inputDisabled: {
+    borderWidth: 1,
+    borderRadius: 10,
+    padding: 12,
+    marginTop: 6,
+    opacity: 0.6,
   },
 
-    loadingContainer: {
+  saveBtn: {
+    backgroundColor: COLORS.primary,
+    padding: 14,
+    marginTop: 20,
+    borderRadius: 12,
+    alignItems: "center",
+  },
+  saveText: { color: "#fff", fontWeight: "700" },
+
+  loadingContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: COLORS.background,
   },
-  
-  loadingImage: {
-    width: 140,
-    height: 140,
-    marginBottom: 16,
-  },
-  
-  loadingText: {
-    fontSize: 14,
-    color: COLORS.textSecondary,
-    fontWeight: "500",
-  },
+  loadingImage: { width: 120, height: 120 },
+  loadingText: { marginTop: 10 },
 });

@@ -46,7 +46,7 @@ userSchema.pre("save", async function () {
     let phone = this.phone.toString().trim();
 
     if (/^[6-9]\d{9}$/.test(phone)) {
-      phone = "+91" + phone;
+      phone = phone;
     }
 
     this.phone = phone;

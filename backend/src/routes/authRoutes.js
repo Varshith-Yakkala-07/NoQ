@@ -18,11 +18,15 @@ const generateToken = (userId) => {
 const normalizePhone = (phone) => {
   if (!phone) return "";
 
-  return phone
+  let cleaned = phone
     .toString()
     .trim()
-    .replace(/^\+91/, "")   // remove +91 prefix
-    .replace(/\D/g, "");    // remove anything non-digit
+    .replace(/\s/g, "")       // remove spaces
+    .replace(/^\+91/, "")     // remove +91
+    .replace(/^91/, "")       // remove 91 prefix
+    .replace(/\D/g, "");      // remove non-digits
+
+  return cleaned;
 };
 
 
