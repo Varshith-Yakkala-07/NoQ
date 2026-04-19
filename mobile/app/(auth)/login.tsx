@@ -115,8 +115,21 @@ if (field === "email") {
       },
     });
   } catch (err: any) {
-    const message =
-      err?.response?.data?.message || "Failed to send OTP";
+    let message = "Failed to send OTP";
+
+  if (err.response) {
+    // Server responded with error
+    message =
+      err.response.data?.message ||
+      err.response.data ||
+      message;
+  } else if (err.request) {
+    // Request made but no response
+    message = "Server not reachable";
+  } else {
+    // Something else
+    message = err.message;
+  }
 
     setErrors({
       email: message,
