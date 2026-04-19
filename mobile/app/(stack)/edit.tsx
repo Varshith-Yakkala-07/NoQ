@@ -160,7 +160,7 @@ export default function EditProfile() {
     router.replace("/(tabs)/profile");
   } catch (err) {
     console.log(err);
-    Alert.alert("Error", "Update failed");
+    Alert.alert("Error", "Update failed!");
   } finally {
     setSaving(false);
   }
