@@ -5,7 +5,7 @@ import profileRoutes from "./routes/profileRoutes.js"
 import { connectDB } from "./lib/db.js"
 import cors from "cors";
 import job from "./lib/cron.js";
-
+import crowdRoutes from "./routes/crowdRoutes.js"
 const app = express();
 const PORT = process.env.PORT;
 
@@ -16,6 +16,7 @@ app.use(cors());
 //Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/profile", profileRoutes);
+app.use("/api/dh", crowdRoutes);
 
 connectDB().then(() => {
   app.listen(PORT, "0.0.0.0", () => {
