@@ -2,11 +2,12 @@ import express from "express";
 import axios from "axios";
 
 const PYTHON_URL = "https://smog-baboon-gloomily.ngrok-free.dev";
+const NGROK_HEADERS = { headers : { "ngrok-skip-browser-warning" : "true"}};
 const router = express.Router();
 
 router.get("/crowd1", async (req, res) => {
   try {
-    const response = await axios.get(`${PYTHON_URL}/data1`);
+    const response = await axios.get(`${PYTHON_URL}/data1`, NGROK_HEADERS);
 
     res.json(response.data); // forward Python response
 
@@ -18,7 +19,7 @@ router.get("/crowd1", async (req, res) => {
 
 router.get("/crowd2", async (req, res) => {
   try {
-    const response = await axios.get(`${PYTHON_URL}/data2`);
+    const response = await axios.get(`${PYTHON_URL}/data2` , NGROK_HEADERS);
 
     res.json(response.data); // forward Python response
 
@@ -30,7 +31,7 @@ router.get("/crowd2", async (req, res) => {
 });
 router.get("/crowd3", async (req, res) => {
   try {
-    const response = await axios.get(`${PYTHON_URL}/data3`);
+    const response = await axios.get(`${PYTHON_URL}/data3` , NGROK_HEADERS);
 
     res.json(response.data); // forward Python response
 
@@ -42,7 +43,7 @@ router.get("/crowd3", async (req, res) => {
 
 router.get("/crowd4", async (req, res) => {
   try {
-    const response = await axios.get(`${PYTHON_URL}/data4`);
+    const response = await axios.get(`${PYTHON_URL}/data4`, NGROK_HEADERS);
 
     res.json(response.data);
 
