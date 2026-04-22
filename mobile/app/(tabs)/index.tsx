@@ -15,6 +15,8 @@ import { useState, useCallback, useEffect, useRef } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import axios from "axios";
 import COLORS from "../../constants/colors";
+import * as Notifications from "expo-notifications";
+import { registerForPushNotifications } from "../utils/notifications"
 
 const { width } = Dimensions.get("window");
 const floatAnim = useRef(new Animated.Value(0)).current;
@@ -40,6 +42,18 @@ const getStatusInfo = (percentage: number) => {
   return { color: "#ef4444", text: "Busy", icon: "warning-outline" as const };
 };
 
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: true,
+    shouldSetBadge: false,
+
+    // ✅ ADD THESE TWO
+    shouldShowBanner: true,
+    shouldShowList: true,
+  }),
+});
+
 export default function Dashboard() {
   const router = useRouter();
 
@@ -47,6 +61,18 @@ export default function Dashboard() {
   const [refreshing, setRefreshing] = useState(false);
   const [countdown, setCountdown] = useState(5);
   const pulseAnim = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+  registerForPushNotifications();
+}, []);
+
+useEffect(() => {
+  const sub = Notifications.addNotificationReceivedListener((notif) => {
+    console.log("Notification received:", notif);
+  });
+
+  return () => sub.remove();
+}, []);
 
   // ✅ TRANSFORM BACKEND DATA
   const transformData = (data: any[]): DiningHall[] => {

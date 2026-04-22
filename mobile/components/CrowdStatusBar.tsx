@@ -71,8 +71,8 @@ useEffect(() => {
   ]}
 />
         {/* Tick marks at 30% and 70% */}
-        <View style={[styles.tick, { left: "30%" }]} />
-        <View style={[styles.tick, { left: "70%" }]} />
+        <View style={[styles.tick, { left: "20%" }]} />
+        <View style={[styles.tick, { left: "40%" }]} />
       </View>
 
       {/* Percentage below */}

@@ -99,7 +99,7 @@ router.post("/register", async (req, res) => {
       try {
         await sendOTPEmail(email, generatedOtp);
       } catch (err) {
-        console.log("Email error:", err);
+        console.log("Email ID error:", err);
         return res.status(500).json({ message: "Failed to send OTP" });
       }
 
