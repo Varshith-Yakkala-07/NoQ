@@ -28,10 +28,12 @@ router.get("/:id", async (req, res) => {
     const { id } = req.params;
 
     const response = await axios.get(`${PYTHON_URL}/all`, NGROK_HEADERS);
-
     const data = response.data;
 
-    const hall = data[id];
+    // ✅ convert dh1 → hall1
+    const hallKey = id.replace("dh", "hall");
+
+    const hall = data[hallKey];
 
     if (!hall) {
       return res.status(404).json({ error: "DH not found" });

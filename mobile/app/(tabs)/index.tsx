@@ -17,6 +17,7 @@ import axios from "axios";
 import COLORS from "../../constants/colors";
 
 const { width } = Dimensions.get("window");
+const floatAnim = useRef(new Animated.Value(0)).current;
 
 interface DiningHall {
   id: string;
@@ -145,6 +146,27 @@ export default function Dashboard() {
 
   const busyCount = diningHalls.filter((h) => h.percentage >= 65).length;
 
+  useEffect(() => {
+  const float = Animated.loop(
+    Animated.sequence([
+      Animated.timing(floatAnim, {
+        toValue: -4,
+        duration: 1500,
+        useNativeDriver: true,
+      }),
+      Animated.timing(floatAnim, {
+        toValue: 0,
+        duration: 1500,
+        useNativeDriver: true,
+      }),
+    ])
+  );
+
+  float.start();
+
+  return () => float.stop();
+}, []);
+
   return (
     <View style={styles.rootContainer}>
       <StatusBar barStyle="dark-content" />
@@ -180,13 +202,18 @@ export default function Dashboard() {
             </View>
           </View>
 
-          <View style={styles.logoContainer}>
-            <Image
+          <Animated.View
+  style={[
+    styles.logoContainer,
+    { transform: [{ translateY: floatAnim }] },
+  ]}
+><Image
               source={require("../../assets/images/noq.png")}
               style={styles.logo}
               resizeMode="contain"
-            />
-          </View>
+            /></Animated.View>
+            
+         
         </View>
 
         {/* STATS */}
@@ -403,20 +430,37 @@ const styles = StyleSheet.create({
 
   // Logo
   logoContainer: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
-    backgroundColor: COLORS.cardBackground,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    alignItems: "center",
-    justifyContent: "center",
-    overflow: "hidden",
-  },
+  width: 48,
+  height: 48,
+  borderRadius: 24,
+
+  backgroundColor: "#ffffff",
+
+  alignItems: "center",
+  justifyContent: "center",
+
+  // 🔥 Premium border (soft glass feel)
+  borderWidth: 1,
+  borderColor: "rgba(0,0,0,0.06)",
+
+  // 🔥 Depth (iOS + Android)
+  shadowColor: "#000",
+  shadowOffset: { width: 0, height: 6 },
+  shadowOpacity: 0.12,
+  shadowRadius: 12,
+  elevation: 6,
+
+  // 🔥 Floating effect
+  marginTop: -10,
+
+  // 🔥 Prevent overflow glitches
+  overflow: "hidden",
+},
   logo: {
-    width: 32,
-    height: 32,
-  },
+  width: 30,
+  height: 30,
+  resizeMode: "contain",
+},
 
   // Stats Banner
   statsBanner: {

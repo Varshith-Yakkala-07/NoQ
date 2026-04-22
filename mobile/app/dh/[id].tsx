@@ -199,11 +199,17 @@ export default function DHDetail() {
   };
 
   // ✅ AUTO REFRESH
-  useEffect(() => {
+  /*useEffect(() => {
     fetchDHData();
     const interval = setInterval(fetchDHData, 5000);
     return () => clearInterval(interval);
-  }, []);
+  }, []);*/
+
+  useEffect(() => {
+  fetchDHData();
+  const interval = setInterval(fetchDHData, 5000);
+  return () => clearInterval(interval);
+}, [id]);
 
   if (!staticData) {
     return (
