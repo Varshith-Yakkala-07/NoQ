@@ -1,5 +1,6 @@
-import { View, Text, StyleSheet } from "react-native";
+import { View, Text, StyleSheet, Animated } from "react-native";
 import COLORS from "../constants/colors";
+import { useEffect, useRef } from "react";
 
 interface CrowdStatusBarProps {
   percentage: number;
@@ -7,6 +8,8 @@ interface CrowdStatusBarProps {
   showLabels?: boolean;
   showPercent?: boolean;
 }
+
+
 
 export function getStatusColor(percentage: number) {
   if (percentage < 30) return "#22c55e";
@@ -29,6 +32,16 @@ export default function CrowdStatusBar({
   const color = getStatusColor(percentage);
   const label = getStatusLabel(percentage);
 
+  const animatedWidth = useRef(new Animated.Value(0)).current;
+
+useEffect(() => {
+  Animated.timing(animatedWidth, {
+    toValue: percentage,
+    duration: 600,
+    useNativeDriver: false,
+  }).start();
+}, [percentage]);
+
   return (
     <View style={styles.wrapper}>
       {/* Labels row above bar */}
@@ -44,16 +57,19 @@ export default function CrowdStatusBar({
 
       {/* Track */}
       <View style={[styles.track, { height }]}>
-        <View
-          style={[
-            styles.fill,
-            {
-              width: `${Math.min(100, Math.max(0, percentage))}%`,
-              backgroundColor: color,
-              height,
-            },
-          ]}
-        />
+        <Animated.View
+  style={[
+    styles.fill,
+    {
+      width: animatedWidth.interpolate({
+        inputRange: [0, 100],
+        outputRange: ["0%", "100%"],
+      }),
+      backgroundColor: color,
+      height,
+    },
+  ]}
+/>
         {/* Tick marks at 30% and 70% */}
         <View style={[styles.tick, { left: "30%" }]} />
         <View style={[styles.tick, { left: "70%" }]} />
@@ -62,9 +78,15 @@ export default function CrowdStatusBar({
       {/* Percentage below */}
       {showPercent && (
         <View style={styles.percentRow}>
-          <Text style={styles.percentText}>0%</Text>
-          <Text style={[styles.percentCurrent, { color }]}>{Math.round(percentage)}% full</Text>
-          <Text style={styles.percentText}>100%</Text>
+          <Text style={styles.percentText}>Empty</Text>
+          <Text style={[styles.percentCurrent, { color }]}>
+  {percentage < 35
+    ? "Plenty of space"
+    : percentage < 65
+    ? "Filling up"
+    : "Almost full"}
+</Text>
+          <Text style={styles.percentText}>Full</Text>
         </View>
       )}
     </View>

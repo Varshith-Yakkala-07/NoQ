@@ -41,7 +41,7 @@ router.get("/:id", async (req, res) => {
 
     res.json(hall);
   } catch (error) {
-    console.error("Python API Error:", error.message);
+    console.error("Python-code API Error:", error.message);
     res.status(500).json({ error: "Python service failed" });
   }
 });

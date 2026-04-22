@@ -267,8 +267,8 @@ export default function DHDetail() {
         <CrowdStatusBar
           percentage={dh.percentage}
           height={12}
-          showLabels
-          showPercent
+          showLabels={false}
+          showPercent={true}
         />
 
         {/* Stats */}
