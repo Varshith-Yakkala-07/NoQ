@@ -108,8 +108,8 @@ const DH_DETAILS: Record<string, Omit<DHDetail, "percentage" | "count">> = {
     id: "dh1",
     name: "Dining Hall 1",
     shortName: "DH1",
-    capacity: 420,
-    location: "Block A, Ground Floor",
+    capacity: 20,
+    location: "Hostel Block-A, Ground Floor",
     timings: "7:30 AM – 10:00 PM",
     menu: [],
   },
@@ -117,8 +117,8 @@ const DH_DETAILS: Record<string, Omit<DHDetail, "percentage" | "count">> = {
     id: "dh2",
     name: "Dining Hall 2",
     shortName: "DH2",
-    capacity: 380,
-    location: "Block B, First Floor",
+    capacity: 20,
+    location: "Hostel Block-A, Ground Floor",
     timings: "7:30 AM – 10:00 PM",
     menu: [],
   },
@@ -126,8 +126,8 @@ const DH_DETAILS: Record<string, Omit<DHDetail, "percentage" | "count">> = {
     id: "dh3",
     name: "Dining Hall 3",
     shortName: "DH3",
-    capacity: 400,
-    location: "Block C, Ground Floor",
+    capacity: 20,
+    location: "Hostel Block-A, Ground Floor",
     timings: "7:30 AM – 10:00 PM",
     menu: [],
   },
@@ -135,8 +135,8 @@ const DH_DETAILS: Record<string, Omit<DHDetail, "percentage" | "count">> = {
     id: "dh4",
     name: "Dining Hall 4",
     shortName: "DH4",
-    capacity: 350,
-    location: "Main Building, Basement",
+    capacity: 20,
+    location: "Hostel Block-A, Ground Floor",
     timings: "7:30 AM – 10:00 PM",
     menu: [],
   },
@@ -186,7 +186,7 @@ export default function DHDetail() {
       if (!hall) return;
 
       const percentage = hall.capacity
-        ? (hall.count / hall.capacity) * 100
+        ? (hall.count / 20) * 100
         : 0;
 
       setDynamicData({
@@ -223,6 +223,7 @@ export default function DHDetail() {
 
   const dh: DHDetail = {
     ...staticData,
+    capacity : 20,
     ...(dynamicData || { count: 0, percentage: 0 }),
   };
 
