@@ -61,10 +61,17 @@ const WEEKLY_MENU = {
   },
 };
 
+const MEAL_TIMINGS = {
+  breakfast: "7:30 AM – 10:00 AM",
+  lunch: "12:00 PM – 2:30 PM",
+  snacks: "5:30 PM – 6:15 PM",
+  dinner: "7:30 PM – 10:00 PM",
+};
+
 // 🔽 HELPER FUNCTION
 
 
-function getTodayMenu(): MenuItem[] {
+function getTodayMenu() {
   const day = new Date()
     .toLocaleDateString("en-IN", { weekday: "long" })
     .toLowerCase();
@@ -73,21 +80,10 @@ function getTodayMenu(): MenuItem[] {
 
   if (!todayMenu) return [];
 
-  const result: MenuItem[] = [];
-
-  (Object.entries(todayMenu) as [Category, string[]][]).forEach(
-    ([category, items]) => {
-      items.forEach((item) => {
-        result.push({
-          name: item,
-          category: category,
-          isVeg: true,
-        });
-      });
-    }
-  );
-
-  return result;
+  return Object.entries(todayMenu).map(([category, items]) => ({
+    category: category as Category,
+    items,
+  }));
 }
 
 interface DHDetail {
@@ -163,6 +159,7 @@ const today = new Date().toLocaleDateString("en-IN", {
 export default function DHDetail() {
   const { id, data } = useLocalSearchParams<{ id: string; data?: string }>();
   const router = useRouter();
+  const [selectedMeal, setSelectedMeal] = useState<Category>("breakfast");
 
   const staticData = DH_DETAILS[id as string];
 
@@ -186,7 +183,7 @@ export default function DHDetail() {
       if (!hall) return;
 
       const percentage = hall.capacity
-        ? (hall.count / 20) * 100
+        ? (hall.count / hall.capacity) * 100
         : 0;
 
       setDynamicData({
@@ -232,6 +229,12 @@ export default function DHDetail() {
 
   const inside = dh.count;
   const avail = dh.capacity - inside;
+  const todayMenu = getTodayMenu();
+const currentMeal = todayMenu.find(
+  (m) => m.category === selectedMeal
+);
+
+
 
   return (
     <ScrollView
@@ -314,7 +317,46 @@ export default function DHDetail() {
       </View>
 
       {/* Menu */}
-      <MenuSection menu={getTodayMenu()} date={today} />
+      <View style={styles.menuCard}>
+  <Text style={styles.menuTitle}>Today's Menu</Text>
+
+  {/* Tabs */}
+  <View style={styles.tabRow}>
+    {(["breakfast", "lunch", "snacks", "dinner"] as Category[]).map(
+      (meal) => (
+        <TouchableOpacity
+          key={meal}
+          onPress={() => setSelectedMeal(meal)}
+          style={[
+            styles.tab,
+            selectedMeal === meal && styles.activeTab,
+          ]}
+        >
+          <Text
+            style={[
+              styles.tabText,
+              selectedMeal === meal && styles.activeTabText,
+            ]}
+          >
+            {meal}
+          </Text>
+        </TouchableOpacity>
+      )
+    )}
+  </View>
+
+  {/* Timings */}
+  <Text style={styles.timings}>
+    ⏰ {MEAL_TIMINGS[selectedMeal]}
+  </Text>
+
+  {/* Menu Items */}
+  {currentMeal?.items.map((item, index) => (
+    <Text key={index} style={styles.menuItem}>
+      • {item}
+    </Text>
+  ))}
+</View>
     </ScrollView>
   );
 }
@@ -431,4 +473,58 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: COLORS.textPrimary,
   },
+  menuCard: {
+  backgroundColor: COLORS.cardBackground,
+  padding: 16,
+  borderRadius: 18,
+  borderWidth: 1,
+  borderColor: COLORS.border,
+  gap: 10,
+},
+
+menuTitle: {
+  fontSize: 16,
+  fontWeight: "700",
+  color: COLORS.textPrimary,
+},
+
+tabRow: {
+  flexDirection: "row",
+  gap: 8,
+  marginTop: 6,
+},
+
+tab: {
+  paddingVertical: 6,
+  paddingHorizontal: 10,
+  borderRadius: 12,
+  backgroundColor: COLORS.inputBackground,
+},
+
+activeTab: {
+  backgroundColor: "#22c55e20",
+},
+
+tabText: {
+  fontSize: 12,
+  color: COLORS.textSecondary,
+  fontWeight: "600",
+},
+
+activeTabText: {
+  color: "#22c55e",
+},
+
+timings: {
+  fontSize: 12,
+  fontWeight: "600",
+  color: COLORS.textSecondary,
+  marginTop: 4,
+},
+
+menuItem: {
+  fontSize: 14,
+  color: COLORS.textPrimary,
+  marginTop: 4,
+},
 });
