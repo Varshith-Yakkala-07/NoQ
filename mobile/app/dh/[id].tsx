@@ -116,7 +116,7 @@ const DH_DETAILS: Record<string, Omit<DHDetail, "percentage" | "count">> = {
     id: "dh1",
     name: "Dining Hall 1",
     shortName: "DH1",
-    capacity: 20,
+    capacity: 15,
     location: "Hostel Block-A, Ground Floor",
     timings: "7:30 AM – 10:00 PM",
     menu: [],
@@ -125,7 +125,7 @@ const DH_DETAILS: Record<string, Omit<DHDetail, "percentage" | "count">> = {
     id: "dh2",
     name: "Dining Hall 2",
     shortName: "DH2",
-    capacity: 20,
+    capacity: 15,
     location: "Hostel Block-A, Ground Floor",
     timings: "7:30 AM – 10:00 PM",
     menu: [],
@@ -134,7 +134,7 @@ const DH_DETAILS: Record<string, Omit<DHDetail, "percentage" | "count">> = {
     id: "dh3",
     name: "Dining Hall 3",
     shortName: "DH3",
-    capacity: 20,
+    capacity: 15,
     location: "Hostel Block-A, Ground Floor",
     timings: "7:30 AM – 10:00 PM",
     menu: [],
@@ -143,7 +143,7 @@ const DH_DETAILS: Record<string, Omit<DHDetail, "percentage" | "count">> = {
     id: "dh4",
     name: "Dining Hall 4",
     shortName: "DH4",
-    capacity: 20,
+    capacity: 15,
     location: "Hostel Block-A, Ground Floor",
     timings: "7:30 AM – 10:00 PM",
     menu: [],
@@ -151,14 +151,14 @@ const DH_DETAILS: Record<string, Omit<DHDetail, "percentage" | "count">> = {
 };
 
 function getStatusColor(p: number) {
-  if (p < 35) return "#22c55e";
-  if (p < 65) return "#f59e0b";
+  if (p <= 20) return "#22c55e";
+  if (p <= 40) return "#f59e0b";
   return "#ef4444";
 }
 
 function getStatusLabel(p: number) {
-  if (p < 35) return "Low Crowd";
-  if (p < 65) return "Moderate";
+  if (p <= 20) return "Low Crowd";
+  if (p <= 40) return "Moderate";
   return "Busy";
 }
 
@@ -242,8 +242,8 @@ useEffect(() => {
 
   const dh: DHDetail = {
     ...staticData,
-    capacity : 20,
     ...(dynamicData || { count: 0, percentage: 0 }),
+    capacity :  15,
   };
 
   const color = getStatusColor(dh.percentage);

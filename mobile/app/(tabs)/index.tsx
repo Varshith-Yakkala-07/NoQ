@@ -31,10 +31,10 @@ interface DiningHall {
 
 // ✅ STATUS (MATCH BACKEND)
 const getStatusInfo = (percentage: number) => {
-  if (percentage < 35)
+  if (percentage <= 20)
     return { color: "#22c55e", text: "Low", icon: "checkmark-circle-outline" as const };
 
-  if (percentage < 65)
+  if (percentage <= 40)
     return { color: "#f59e0b", text: "Moderate", icon: "time-outline" as const };
 
   return { color: "#ef4444", text: "Busy", icon: "warning-outline" as const };
@@ -52,19 +52,19 @@ export default function Dashboard() {
   const transformData = (data: any[]): DiningHall[] => {
     return data.map((hall, index) => {
       const percentage = hall.capacity
-        ? (hall.count / hall.capacity) * 100
+        ? (hall.count / 15) * 100
         : 0;
 
       let status: "Low" | "Moderate" | "Busy" = "Low";
-      if (percentage >= 65) status = "Busy";
-      else if (percentage >= 35) status = "Moderate";
+      if (percentage > 40) status = "Busy";
+      else if (percentage > 20) status = "Moderate";
 
       return {
         id: `dh${index + 1}`,
         name: hall.zone,
         shortName: `DH${index + 1}`,
         percentage,
-        capacity: hall.capacity,
+        capacity: 15,
         count: hall.count,
         status,
       };
@@ -144,7 +144,7 @@ export default function Dashboard() {
         )
       : 0;
 
-  const busyCount = diningHalls.filter((h) => h.percentage >= 65).length;
+  const busyCount = diningHalls.filter((h) => h.percentage > 40).length;
 
   useEffect(() => {
   const float = Animated.loop(
