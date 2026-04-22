@@ -125,8 +125,14 @@ export default function Dashboard() {
   }, []);
 
   const handleCardPress = (hall: DiningHall) => {
-    router.push(`/dh/${hall.id}` as any);
-  };
+  router.push({
+  pathname: "/dh/[id]",
+  params: {
+    id: hall.id,
+    data: JSON.stringify(hall),
+  },
+});
+};
 
   // ✅ STATS
   const avgLoad =
@@ -176,7 +182,7 @@ export default function Dashboard() {
 
           <View style={styles.logoContainer}>
             <Image
-              source={require("../../assets/images/noq-1.png")}
+              source={require("../../assets/images/noq.png")}
               style={styles.logo}
               resizeMode="contain"
             />
@@ -259,21 +265,23 @@ export default function Dashboard() {
                 </View>
 
                 <View style={styles.cardBottom}>
-                  <Text style={styles.percentText}>
-                    {Math.round(hall.percentage)}%
-                  </Text>
+  {/* 🔥 PEOPLE COUNT = PRIMARY */}
+  <View style={styles.peopleRow}>
+    <Ionicons
+      name="people-outline"
+      size={14}
+      color={COLORS.textPrimary}
+    />
+    <Text style={styles.percentText}>
+      {hall.count} / {hall.capacity}
+    </Text>
+  </View>
 
-                  <View style={styles.peopleRow}>
-                    <Ionicons
-                      name="people-outline"
-                      size={12}
-                      color={COLORS.textSecondary}
-                    />
-                    <Text style={styles.peopleText}>
-                      {hall.count} / {hall.capacity}
-                    </Text>
-                  </View>
-                </View>
+  {/* 📉 PERCENTAGE = SECONDARY */}
+  <Text style={styles.peopleText}>
+    {Math.round(hall.percentage)}%
+  </Text>
+</View>
               </TouchableOpacity>
             );
           })}

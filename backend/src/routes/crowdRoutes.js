@@ -23,4 +23,25 @@ router.get("/all", async (req, res) => {
   }
 });
 
+router.get("/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const response = await axios.get(`${PYTHON_URL}/all`, NGROK_HEADERS);
+
+    const data = response.data;
+
+    const hall = data[id];
+
+    if (!hall) {
+      return res.status(404).json({ error: "DH not found" });
+    }
+
+    res.json(hall);
+  } catch (error) {
+    console.error("Python API Error:", error.message);
+    res.status(500).json({ error: "Python service failed" });
+  }
+});
+
 export default router;
