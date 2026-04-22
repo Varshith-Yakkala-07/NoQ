@@ -68,7 +68,19 @@ const MEAL_TIMINGS = {
   dinner: "7:30 PM – 10:00 PM",
 };
 
-// 🔽 HELPER FUNCTION
+function getCurrentMeal(): Category {
+  const now = new Date();
+  const hour = now.getHours();
+  const minute = now.getMinutes();
+  const time = hour * 60 + minute;
+
+  if (time >= 450 && time <= 600) return "breakfast";
+  if (time >= 720 && time <= 870) return "lunch";
+  if (time >= 1050 && time <= 1095) return "snacks";
+  if (time >= 1170 && time <= 1320) return "dinner";
+
+  return "breakfast";
+}
 
 
 function getTodayMenu() {
@@ -159,7 +171,9 @@ const today = new Date().toLocaleDateString("en-IN", {
 export default function DHDetail() {
   const { id, data } = useLocalSearchParams<{ id: string; data?: string }>();
   const router = useRouter();
-  const [selectedMeal, setSelectedMeal] = useState<Category>("breakfast");
+  const [selectedMeal, setSelectedMeal] = useState<Category>(() =>
+  getCurrentMeal()
+);
 
   const staticData = DH_DETAILS[id as string];
 
@@ -207,6 +221,14 @@ export default function DHDetail() {
   const interval = setInterval(fetchDHData, 5000);
   return () => clearInterval(interval);
 }, [id]);
+
+useEffect(() => {
+  const interval = setInterval(() => {
+    setSelectedMeal(getCurrentMeal());
+  }, 60000);
+
+  return () => clearInterval(interval);
+}, []);
 
   if (!staticData) {
     return (
