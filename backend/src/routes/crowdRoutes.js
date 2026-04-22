@@ -18,7 +18,7 @@ router.get("/all", async (req, res) => {
     const response = await axios.get(`${PYTHON_URL}/all`, NGROK_HEADERS);
     res.json(response.data);
   } catch (error) {
-    console.error("Python-code API Error:", error.message);
+    console.error("Python API Error:", error.message);
     res.status(500).json({ error: "Python service failed" });
   }
 });

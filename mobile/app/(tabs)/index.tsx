@@ -6,9 +6,12 @@ import {
   TouchableOpacity,
   RefreshControl,
   Dimensions,
+  StatusBar,
   Image,
+  Animated,
 } from "react-native";
-import { useState, useEffect, useCallback } from "react";
+import { useRouter } from "expo-router";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import axios from "axios";
 import COLORS from "../../constants/colors";
@@ -16,39 +19,58 @@ import COLORS from "../../constants/colors";
 const { width } = Dimensions.get("window");
 
 interface DiningHall {
-  id: number;
+  id: string;
   name: string;
+  shortName: string;
   percentage: number;
-  status: "Low" | "Moderate" | "Busy";
-  count: number;
   capacity: number;
+  count: number;
+  status: "Low" | "Moderate" | "Busy";
 }
 
+// ✅ STATUS (MATCH BACKEND)
+const getStatusInfo = (percentage: number) => {
+  if (percentage < 35)
+    return { color: "#22c55e", text: "Low", icon: "checkmark-circle-outline" as const };
+
+  if (percentage < 65)
+    return { color: "#f59e0b", text: "Moderate", icon: "time-outline" as const };
+
+  return { color: "#ef4444", text: "Busy", icon: "warning-outline" as const };
+};
+
 export default function Dashboard() {
+  const router = useRouter();
+
   const [diningHalls, setDiningHalls] = useState<DiningHall[]>([]);
   const [refreshing, setRefreshing] = useState(false);
+  const [countdown, setCountdown] = useState(5);
+  const pulseAnim = useRef(new Animated.Value(1)).current;
 
+  // ✅ TRANSFORM BACKEND DATA
   const transformData = (data: any[]): DiningHall[] => {
     return data.map((hall, index) => {
       const percentage = hall.capacity
-  ? (hall.count / hall.capacity) * 100
-  : 0;
+        ? (hall.count / hall.capacity) * 100
+        : 0;
 
       let status: "Low" | "Moderate" | "Busy" = "Low";
       if (percentage >= 65) status = "Busy";
       else if (percentage >= 35) status = "Moderate";
 
       return {
-        id: index + 1,
+        id: `dh${index + 1}`,
         name: hall.zone,
+        shortName: `DH${index + 1}`,
         percentage,
-        status,
-        count: hall.count,
         capacity: hall.capacity,
+        count: hall.count,
+        status,
       };
     });
   };
 
+  // ✅ FETCH DATA
   const fetchData = async () => {
     try {
       const res = await axios.get(
@@ -58,78 +80,176 @@ export default function Dashboard() {
       const rawData = Object.values(res.data);
       setDiningHalls(transformData(rawData));
     } catch (err) {
-      console.error("Error fetching crowd data:", err);
+      console.error("Error fetching data:", err);
     }
   };
 
+  // ✅ ANIMATION
+  useEffect(() => {
+    const pulse = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, { toValue: 0.2, duration: 600, useNativeDriver: true }),
+        Animated.timing(pulseAnim, { toValue: 1, duration: 600, useNativeDriver: true }),
+      ])
+    );
+    pulse.start();
+    return () => pulse.stop();
+  }, []);
+
+  // ✅ AUTO REFRESH
   useEffect(() => {
     fetchData();
-    const interval = setInterval(fetchData, 5000);
-    return () => clearInterval(interval);
+
+    const interval = setInterval(() => {
+      fetchData();
+      setCountdown(5);
+    }, 5000);
+
+    const countInterval = setInterval(() => {
+      setCountdown((prev) => (prev <= 1 ? 5 : prev - 1));
+    }, 1000);
+
+    return () => {
+      clearInterval(interval);
+      clearInterval(countInterval);
+    };
   }, []);
 
+  // ✅ MANUAL REFRESH
   const onRefresh = useCallback(() => {
     setRefreshing(true);
-    fetchData().finally(() => setRefreshing(false));
+    fetchData().finally(() => {
+      setRefreshing(false);
+      setCountdown(5);
+    });
   }, []);
 
-  const getStatusInfo = (percentage: number) => {
-  if (percentage < 35) return { color: "#22c55e", text: "Low Crowd" };
-  if (percentage < 65) return { color: "#eab308", text: "Moderate" };
-  return { color: "#ef4444", text: "Busy" };
-};
+  const handleCardPress = (hall: DiningHall) => {
+    router.push(`/dh/${hall.id}` as any);
+  };
+
+  // ✅ STATS
+  const avgLoad =
+    diningHalls.length > 0
+      ? Math.round(
+          diningHalls.reduce((a, b) => a + b.percentage, 0) /
+            diningHalls.length
+        )
+      : 0;
+
+  const busyCount = diningHalls.filter((h) => h.percentage >= 65).length;
 
   return (
-    <View style={styles.container}>
-      
-      {/* Top Background */}
-      <View style={styles.topBackground} />
+    <View style={styles.rootContainer}>
+      <StatusBar barStyle="dark-content" />
+
+      <View style={styles.circleTopRight} />
+      <View style={styles.circleTopRightInner} />
+      <View style={styles.circleBottomLeft} />
 
       <ScrollView
+        style={styles.container}
         contentContainerStyle={styles.scrollContent}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
+        showsVerticalScrollIndicator={false}
       >
-        {/* Header */}
+        {/* HEADER */}
         <View style={styles.header}>
-          <View>
+          <View style={{ flex: 1 }}>
             <Text style={styles.greeting}>Live Status</Text>
-            <Text style={styles.title}>Dining Crowd</Text>
+
+            <View style={styles.titleRow}>
+              <View style={styles.titleHighlight}>
+                <Text style={styles.title}>Dining Status</Text>
+              </View>
+
+              <View style={styles.liveContainer}>
+                <Animated.View
+                  style={[styles.liveDot, { opacity: pulseAnim }]}
+                />
+                <Text style={styles.liveText}>LIVE</Text>
+              </View>
+            </View>
           </View>
 
-          <View style={styles.headerRight}>
-            <TouchableOpacity style={styles.refreshBtn} onPress={onRefresh}>
-              <Ionicons name="refresh" size={22} color={COLORS.primary} />
-            </TouchableOpacity>
-
+          <View style={styles.logoContainer}>
             <Image
-              source={require("../../assets/images/logo.png")}
+              source={require("../../assets/images/noq-1.png")}
               style={styles.logo}
+              resizeMode="contain"
             />
           </View>
         </View>
 
-        {/* Grid */}
+        {/* STATS */}
+        <View style={styles.statsBanner}>
+          <View style={styles.statItem}>
+            <Text style={styles.statValue}>{avgLoad}%</Text>
+            <Text style={styles.statLabel}>Avg Load</Text>
+          </View>
+
+          <View style={styles.statDivider} />
+
+          <View style={styles.statItem}>
+            <Text
+              style={[
+                styles.statValue,
+                { color: busyCount > 0 ? "#ef4444" : "#22c55e" },
+              ]}
+            >
+              {busyCount}
+            </Text>
+            <Text style={styles.statLabel}>Busy Now</Text>
+          </View>
+
+          <View style={styles.statDivider} />
+
+          <View style={styles.statItem}>
+            <Text style={styles.statValue}>{diningHalls.length}</Text>
+            <Text style={styles.statLabel}>Total DH</Text>
+          </View>
+        </View>
+
+        <Text style={styles.sectionTitle}>All Dining Halls</Text>
+
+        {/* GRID */}
         <View style={styles.grid}>
           {diningHalls.map((hall) => {
-            const { color, text } = getStatusInfo(hall.percentage);
+            const { color, text, icon } = getStatusInfo(hall.percentage);
 
             return (
-              <View key={hall.id} style={styles.card}>
-                <View style={styles.cardHeader}>
-                  <Ionicons name="restaurant-outline" size={28} color={COLORS.primary} />
-                  <Text style={styles.hallName}>{hall.name}</Text>
+              <TouchableOpacity
+                key={hall.id}
+                style={styles.card}
+                onPress={() => handleCardPress(hall)}
+                activeOpacity={0.75}
+              >
+                <View style={styles.cardTop}>
+                  <View
+                    style={[styles.dhBadge, { backgroundColor: color + "20" }]}
+                  >
+                    <Text style={[styles.dhBadgeText, { color }]}>
+                      {hall.shortName}
+                    </Text>
+                  </View>
+                  <Ionicons
+                    name="chevron-forward"
+                    size={16}
+                    color={COLORS.textSecondary}
+                  />
                 </View>
 
-                <Text style={[styles.statusText, { color }]}>
-                  {text}
-                </Text>
+                <View style={styles.statusRow}>
+                  <Ionicons name={icon} size={14} color={color} />
+                  <Text style={[styles.statusText, { color }]}>{text}</Text>
+                </View>
 
-                <View style={styles.progressContainer}>
+                <View style={styles.progressTrack}>
                   <View
                     style={[
-                      styles.progressBar,
+                      styles.progressFill,
                       {
                         width: `${hall.percentage}%`,
                         backgroundColor: color,
@@ -138,167 +258,232 @@ export default function Dashboard() {
                   />
                 </View>
 
-                <Text style={styles.percentageText}>
-                  {hall.percentage.toFixed(1)}%
-                </Text>
-
-                <View style={styles.peopleRow}>
-                  <Ionicons name="people-outline" size={14} color={COLORS.textSecondary} />
-                  <Text style={styles.peopleHint}>
-                    {hall.count} / {hall.capacity}
+                <View style={styles.cardBottom}>
+                  <Text style={styles.percentText}>
+                    {Math.round(hall.percentage)}%
                   </Text>
+
+                  <View style={styles.peopleRow}>
+                    <Ionicons
+                      name="people-outline"
+                      size={12}
+                      color={COLORS.textSecondary}
+                    />
+                    <Text style={styles.peopleText}>
+                      {hall.count} / {hall.capacity}
+                    </Text>
+                  </View>
                 </View>
-              </View>
+              </TouchableOpacity>
             );
           })}
         </View>
 
-        <Text style={styles.note}>
-          Auto updates every 5 seconds
-        </Text>
+        {/* FOOTER */}
+        <View style={styles.footerRow}>
+          <Ionicons
+            name="sync-outline"
+            size={13}
+            color={COLORS.textSecondary}
+          />
+          <Text style={styles.footerNote}>
+            Auto-updates in {countdown}s
+          </Text>
+        </View>
       </ScrollView>
     </View>
   );
 }
 
+
+
+
+const CARD_WIDTH = (width - 56) / 2;
+
 const styles = StyleSheet.create({
-  container: {
+  rootContainer: {
     flex: 1,
     backgroundColor: COLORS.background,
   },
 
-  topBackground: {
+  // Decorative circles matching login page
+  circleTopRight: {
     position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 180,
+    width: 220,
+    height: 220,
+    borderRadius: 110,
     backgroundColor: COLORS.primary,
-    borderBottomLeftRadius: 30,
-    borderBottomRightRadius: 30,
+    top: -80,
+    right: -80,
+    zIndex: 0,
+  },
+  circleTopRightInner: {
+    position: "absolute",
+    width: 160,
+    height: 160,
+    borderRadius: 80,
+    borderWidth: 2,
+    borderColor: COLORS.primary + "30",
+    top: -20,
+    right: 60,
+    zIndex: 0,
+  },
+  circleBottomLeft: {
+    position: "absolute",
+    width: 180,
+    height: 180,
+    borderRadius: 90,
+    backgroundColor: COLORS.primary + "15",
+    bottom: 40,
+    left: -60,
+    zIndex: 0,
   },
 
-  scrollContent: {
-    padding: 20,
-    paddingTop: 70,
-  },
+  container: { flex: 1 },
+  scrollContent: { paddingHorizontal: 20, paddingTop: 60, paddingBottom: 40, zIndex: 1 },
 
+  // Header
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 28,
+    alignItems: "flex-start",
+    marginBottom: 20,
   },
+  greeting: { fontSize: 14, color: COLORS.textSecondary, marginBottom: 6 },
 
-  headerRight: {
+  titleRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
-  },
-
-  logo: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-  },
-
-  greeting: {
-  fontSize: 14,
-  color: "#f3e8e2", // light text for dark background
-},
-
-title: {
-  fontSize: 26,
-  fontWeight: "800",
-  color: "#fff", // main white heading
-},
-
-  refreshBtn: {
-    padding: 6,
-    backgroundColor: COLORS.cardBackground,
-    borderRadius: 10,
-  },
-
-  grid: {
-    flexDirection: "row",
     flexWrap: "wrap",
-    justifyContent: "space-between",
-    gap: 16,
-    marginTop: 20,
   },
-
-  // ❗ CARDS NOT TOUCHED
-  card: {
-    width: (width - 68) / 2,
-    backgroundColor: COLORS.cardBackground,
-    borderRadius: 20,
-    padding: 20,
-    borderWidth: 1.5,
-    borderColor: COLORS.border,
-    shadowColor: COLORS.black,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 5,
-    marginBottom: 16,
+  titleHighlight: {
+    backgroundColor: COLORS.primary + "15",
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 10,
+    borderLeftWidth: 3,
+    borderLeftColor: COLORS.primary,
   },
-
-  cardHeader: {
+  title: {
+    fontSize: 24,
+    fontWeight: "800",
+    color: COLORS.primary,
+    letterSpacing: -0.5,
+  },
+  liveContainer: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
-    marginBottom: 12,
+    gap: 5,
+    backgroundColor: "#ef444415",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 20,
   },
-
-  hallName: {
-    fontSize: 18,
+  liveDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: "#ef4444",
+  },
+  liveText: {
+    fontSize: 10,
     fontWeight: "700",
-    color: COLORS.textPrimary,
-    flex: 1,
+    color: "#ef4444",
+    letterSpacing: 1,
   },
 
-  statusText: {
-    fontSize: 15,
+  // Logo
+  logoContainer: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: COLORS.cardBackground,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    alignItems: "center",
+    justifyContent: "center",
+    overflow: "hidden",
+  },
+  logo: {
+    width: 32,
+    height: 32,
+  },
+
+  // Stats Banner
+  statsBanner: {
+    flexDirection: "row",
+    backgroundColor: COLORS.cardBackground,
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 24,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    alignItems: "center",
+    justifyContent: "space-around",
+  },
+  statItem: { alignItems: "center", flex: 1 },
+  statValue: { fontSize: 22, fontWeight: "700", color: COLORS.textPrimary },
+  statLabel: { fontSize: 11, color: COLORS.textSecondary, marginTop: 2, textTransform: "uppercase", letterSpacing: 0.5 },
+  statDivider: { width: 1, height: 32, backgroundColor: COLORS.border },
+
+  sectionTitle: {
+    fontSize: 13,
     fontWeight: "600",
+    color: COLORS.textSecondary,
+    textTransform: "uppercase",
+    letterSpacing: 1,
     marginBottom: 12,
   },
 
-  progressContainer: {
-    height: 10,
+  // Grid & Cards
+  grid: { flexDirection: "row", flexWrap: "wrap", gap: 16 },
+  card: {
+    width: CARD_WIDTH,
+    backgroundColor: COLORS.cardBackground,
+    borderRadius: 18,
+    padding: 16,
+    borderWidth: 1.5,
+    borderColor: COLORS.border,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  cardTop: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 10,
+  },
+  dhBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
+  dhBadgeText: { fontSize: 13, fontWeight: "700" },
+  statusRow: { flexDirection: "row", alignItems: "center", gap: 4, marginBottom: 10 },
+  statusText: { fontSize: 13, fontWeight: "600" },
+  progressTrack: {
+    height: 6,
     backgroundColor: COLORS.inputBackground,
     borderRadius: 999,
     overflow: "hidden",
-    marginBottom: 8,
+    marginBottom: 10,
   },
+  progressFill: { height: "100%", borderRadius: 999 },
+  cardBottom: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+  percentText: { fontSize: 18, fontWeight: "700", color: COLORS.textPrimary },
+  peopleRow: { flexDirection: "row", alignItems: "center", gap: 3 },
+  peopleText: { fontSize: 11, color: COLORS.textSecondary, fontWeight: "500" },
 
-  progressBar: {
-    height: "100%",
-    borderRadius: 999,
-  },
-
-  percentageText: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: COLORS.textPrimary,
-    textAlign: "right",
-  },
-
-  peopleHint: {
-    fontSize: 11,
-    color: COLORS.textSecondary,
-    textAlign: "right",
-  },
-
-  peopleRow: {
+  // Footer
+  footerRow: {
     flexDirection: "row",
     alignItems: "center",
-    marginTop: 6,
+    justifyContent: "center",
+    gap: 6,
+    marginTop: 28,
   },
-
-  note: {
-    textAlign: "center",
-    marginTop: 40,
-    fontSize: 13,
+  footerNote: {
+    fontSize: 12,
     color: COLORS.textSecondary,
     lineHeight: 18,
   },
