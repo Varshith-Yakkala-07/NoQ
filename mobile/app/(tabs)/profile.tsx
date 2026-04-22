@@ -8,6 +8,7 @@ import { Animated } from "react-native";
 import { useRef } from "react";
 import { Alert } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import AppLoader from "../../components/apploader";
 
 export default function Profile() {
 
@@ -52,28 +53,10 @@ export default function Profile() {
   fetchProfile();
 }, []);
 
-  if (loading) {
-  return (
-    <View style={styles.loadingContainer}>
-      <Animated.View
-        style={{
-          opacity: fadeAnim,
-          transform: [{ scale: scaleAnim }],
-          alignItems: "center",
-        }}
-      >
-        <Image
-          source={require("../../assets/images/logo.png")}
-          style={styles.loadingImage}
-          resizeMode="contain"
-        />
+  
 
-        <Text style={styles.loadingText}>
-          Loading your profile...
-        </Text>
-      </Animated.View>
-    </View>
-  );
+if (loading) {
+  return <AppLoader />;
 }
 
 const handleLogout = () => {

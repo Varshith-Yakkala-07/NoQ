@@ -1,119 +1,141 @@
-import cv2
-import torch
-from ultralytics import YOLO
-from fastapi import FastAPI
+# import cv2
+# import torch
+# import time
+# import threading
+# from ultralytics import YOLO
+# from fastapi import FastAPI
+# from contextlib import asynccontextmanager
 
-app = FastAPI()
+# # -------- DEVICE --------
+# device = '0' if torch.cuda.is_available() else 'cpu'
+# print(f"Using device: {device}")
 
-# -------- DEVICE --------
-device = '0' if torch.cuda.is_available() else 'cpu'
-print(f"Using device: {device}")
+# # -------- ONE MODEL, ONE VIDEO --------
+# model = YOLO("yolov8m.pt")
 
-# -------- MODEL --------
-model = YOLO('yolov8m.pt')
+# # -------- SHARED STATE --------
+# shared_data = {"count": 0, "status": "low", "last_updated": 0}
+# state_lock = threading.Lock()
 
-# -------- VIDEO SOURCES --------
-videos = {
-    "hall1": cv2.VideoCapture("video1.mp4"),
-    "hall2": cv2.VideoCapture("video2.mp4"),
-    "hall3": cv2.VideoCapture("video3.mp4"),
-    "hall4": cv2.VideoCapture("video4.mp4"),
-}
+# # -------- STATUS --------
+# def get_status(count, capacity=20):
+#     percentage = (count / capacity) * 100
 
-# -------- TIME TRACKING --------
-current_times = {
-    "hall1": 0,
-    "hall2": 0,
-    "hall3": 0,
-    "hall4": 0,
-}
+#     if percentage < 35:
+#         return "low"
+#     elif percentage < 65:
+#         return "medium"
+#     else:
+#         return "high"
 
-INTERVAL = 2  # seconds
+# # -------- SINGLE VIDEO LOOP --------
+# def run_video_loop():
+#     print("Video loop thread started!")
+#     cap = cv2.VideoCapture("video2.mp4")
 
+#     fps = cap.get(cv2.CAP_PROP_FPS)
+#     if not fps or fps == 0:
+#         fps = 25
+#     frame_delay = 1 / fps
+#     print(f"FPS: {fps}")
 
-# -------- FUNCTION --------
-def get_count(hall):
-    cap = videos[hall]
-    current_time = current_times[hall]
+#     DETECTION_INTERVAL = 3
+#     last_detection_time = 0
+#     last_ids = set()
 
-    cap.set(cv2.CAP_PROP_POS_MSEC, current_time * 1000)
+#     while True:
+#         ret, frame = cap.read()
+#         if not ret:
+#             print("Video ended, restarting...")
+#             cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
+#             last_ids = set()
+#             continue
 
-    ret, frame = cap.read()
-    if not ret:
-        current_times[hall] = 0
-        return 0
+#         current_time = time.time()
 
-    frame = cv2.rotate(frame, cv2.ROTATE_90_CLOCKWISE)
+#         if current_time - last_detection_time >= DETECTION_INTERVAL:
+#             results = model.track(
+#                 frame,
+#                 persist=True,
+#                 classes=[0],
+#                 conf=0.4,
+#                 device=device,
+#                 verbose=False
+#             )
 
-    results = model.predict(
-        frame,
-        classes=[0],
-        conf=0.4,
-        device=device,
-        verbose=False
-    )
+#             current_ids = set()
+#             for r in results:
+#                 if r.boxes.id is not None:
+#                     ids = r.boxes.id.cpu().numpy().astype(int)
+#                     for track_id in ids:
+#                         current_ids.add(track_id)
 
-    count = sum(len(r.boxes) for r in results)
+#             last_ids = current_ids
+#             last_detection_time = current_time
+#             count = len(last_ids)
 
-    # move forward
-    current_times[hall] += INTERVAL
+#             with state_lock:
+#                 shared_data["count"] = count
+#                 shared_data["status"] = get_status(count)
+#                 shared_data["last_updated"] = current_time
 
-    return count
+#             print(f"Count updated: {count}")
 
+#         time.sleep(frame_delay)
 
-# -------- STATUS --------
-def get_status(count, capacity=100):
-    if count < capacity * 0.5:
-        return "low"
-    elif count < capacity * 0.75:
-        return "medium"
-    else:
-        return "high"
+#     cap.release()
 
+# # -------- LIFESPAN (replaces on_event startup) --------
+# @asynccontextmanager
+# async def lifespan(app: FastAPI):
+#     thread = threading.Thread(target=run_video_loop, daemon=True)
+#     thread.start()
+#     print("Video loop started!")
+#     yield  # app runs here
+#     print("Shutting down...")
 
-# -------- APIs --------
-@app.get("/data1")
-def hall1():
-    count = get_count("hall1")
-    return {
-        "zone": "Dining Hall 1",
-        "count": count,
-        "capacity": 100,
-        "status": get_status(count)
-    }
+# app = FastAPI(lifespan=lifespan)
 
+# # -------- HELPER --------
+# def make_response(zone, count, status):
+#     return {
+#         "zone": zone,
+#         "count": count,
+#         "capacity": 20,
+#         "status": status,
+#     }
 
-@app.get("/data2")
-def hall2():
-    count = get_count("hall2")
-    return {
-        "zone": "Dining Hall 2",
-        "count": count,
-        "capacity": 100,
-        "status": get_status(count)
-    }
+# # -------- INDIVIDUAL ENDPOINTS --------
+# @app.get("/data1")
+# def get_hall1():
+#     with state_lock:
+#         return make_response("Dining Hall 1", shared_data["count"], shared_data["status"])
 
+# @app.get("/data2")
+# def get_hall2():
+#     with state_lock:
+#         return make_response("Dining Hall 2", shared_data["count"], shared_data["status"])
 
-@app.get("/data3")
-def hall3():
-    count = get_count("hall3")
-    return {
-        "zone": "Dining Hall 3",
-        "count": count,
-        "capacity": 100,
-        "status": get_status(count)
-    }
+# @app.get("/data3")
+# def get_hall3():
+#     with state_lock:
+#         return make_response("Dining Hall 3", shared_data["count"], shared_data["status"])
 
+# @app.get("/data4")
+# def get_hall4():
+#     with state_lock:
+#         return make_response("Dining Hall 4", shared_data["count"], shared_data["status"])
 
-@app.get("/data4")
-def hall4():
-    count = get_count("hall4")
-    return {
-        "zone": "Dining Hall 4",
-        "count": count,
-        "capacity": 100,
-        "status": get_status(count)
-    }
+# # -------- ALL HALLS ENDPOINT --------
+# @app.get("/all")
+# def get_all():
+#     with state_lock:
+#         count = shared_data["count"]
+#         status = shared_data["status"]
 
-
-
+#     return {
+#         "hall1": make_response("Dining Hall 1", count, status),
+#         "hall2": make_response("Dining Hall 2", count, status),
+#         "hall3": make_response("Dining Hall 3", count, status),
+#         "hall4": make_response("Dining Hall 4", count, status),
+#     }

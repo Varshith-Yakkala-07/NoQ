@@ -18,6 +18,8 @@ import { useEffect, useState, useRef } from "react";
 import { API } from "../../lib/api";
 import { Animated } from "react-native";
 import * as ImagePicker from "expo-image-picker";
+import AppLoader from "../../components/apploader";
+
 
 type UserType = {
   username: string;
@@ -166,26 +168,10 @@ export default function EditProfile() {
   }
 };
 
-  if (loading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <Animated.View
-          style={{
-            opacity: fadeAnim,
-            transform: [{ scale: scaleAnim }],
-            alignItems: "center",
-          }}
-        >
-          <Image
-            source={require("../../assets/images/logo.png")}
-            style={styles.loadingImage}
-            resizeMode="contain"
-          />
-          <Text style={styles.loadingText}>Loading your profile...</Text>
-        </Animated.View>
-      </View>
-    );
-  }
+  
+if (loading) {
+  return <AppLoader />;
+}
 
   return (
     <KeyboardAvoidingView
@@ -273,13 +259,17 @@ export default function EditProfile() {
           />
 
           {/* SAVE */}
-          <TouchableOpacity style={styles.saveBtn} onPress={handleSave}>
-            {saving ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <Text style={styles.saveText}>Save Changes</Text>
-            )}
-          </TouchableOpacity>
+          <TouchableOpacity
+  style={[styles.saveBtn, saving && { opacity: 0.7 }]}
+  onPress={handleSave}
+  disabled={saving}
+>
+  {saving ? (
+    <ActivityIndicator color="#fff" />
+  ) : (
+    <Text style={styles.saveText}>Save Changes</Text>
+  )}
+</TouchableOpacity>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
