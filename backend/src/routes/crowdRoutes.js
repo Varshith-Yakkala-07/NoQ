@@ -42,7 +42,7 @@ router.get("/:id", async (req, res) => {
 
     res.json(hall);
   } catch (error) {
-    
+    console.log("error in backend ai");
     console.error("Python-code API Error:", error.message);
     res.status(500).json({ error: "Python service failed" });
   }

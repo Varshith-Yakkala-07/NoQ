@@ -12,14 +12,14 @@ interface CrowdStatusBarProps {
 
 
 export function getStatusColor(percentage: number) {
-  if (percentage < 30) return "#22c55e";
-  if (percentage < 70) return "#f59e0b";
+  if (percentage <= 20) return "#22c55e";
+  if (percentage <= 40) return "#f59e0b";
   return "#ef4444";
 }
 
 export function getStatusLabel(percentage: number): "Low" | "Moderate" | "Busy" {
-  if (percentage < 30) return "Low";
-  if (percentage < 70) return "Moderate";
+  if (percentage <= 20) return "Low";
+  if (percentage <= 40) return "Moderate";
   return "Busy";
 }
 
@@ -80,9 +80,9 @@ useEffect(() => {
         <View style={styles.percentRow}>
           <Text style={styles.percentText}>Empty</Text>
           <Text style={[styles.percentCurrent, { color }]}>
-  {percentage < 35
+  {percentage <= 20
     ? "Plenty of space"
-    : percentage < 65
+    : percentage <= 40
     ? "Filling up"
     : "Almost full"}
 </Text>
