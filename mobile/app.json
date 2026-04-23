@@ -12,20 +12,16 @@
       "supportsTablet": true
     },
     "android": {
-      "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/images/android-icon-foreground.png",
-        "backgroundImage": "./assets/images/android-icon-background.png",
-        "monochromeImage": "./assets/images/android-icon-monochrome.png"
-      },
-      "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false,
-      "permissions": [
-        "NOTIFICATIONS"
-      ],
-      "useNextNotificationsApi": true,
-      "package": "com.anonymous.mobile"
-    },
+  "adaptiveIcon": {
+    "foregroundImage": "./assets/images/icon.png",
+    "backgroundColor": "#ffffff"
+  },
+  "edgeToEdgeEnabled": true,
+  "predictiveBackGestureEnabled": false,
+  "permissions": ["NOTIFICATIONS"],
+  "useNextNotificationsApi": true,
+  "package": "com.anonymous.mobile"
+},
     "web": {
       "output": "static",
       "favicon": "./assets/images/favicon.png"
