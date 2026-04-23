@@ -33,7 +33,6 @@ router.get("/all", async (req, res) => {
 
     res.json(data);
   } catch (error) {
-    console.log("error in backend - AI");
     console.error("Python API Error:", error.message);
     res.status(500).json({ error: "Python service failed" });
   }
@@ -96,7 +95,6 @@ const messages = tokens.map((t) => ({
 
     console.log("Notification sent:", title);
   } catch (err) {
-    console.log("error in notifications");
     console.error("notification error : ", err.message);
   }
 };
