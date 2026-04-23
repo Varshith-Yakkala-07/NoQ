@@ -171,12 +171,14 @@ router.post("/login", async (req, res) => {
             
         //all fields check
         if (!email || !password) {
+          console.log("provide all fields");
             return res.status(400).json({ message: "All fields are required!" });
         }
 
         //email check
         const btRegex = /^bt[a-z0-9]{8}@iiitn\.ac\.in$/;
         if (!btRegex.test(email)) {
+          console.log("invalid bt id");
             return res.status(400).json({ message: "Invalid credentials" });
         }
 

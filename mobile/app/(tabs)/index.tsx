@@ -40,18 +40,6 @@ const getStatusInfo = (percentage: number) => {
   return { color: "#ef4444", text: "Busy", icon: "warning-outline" as const };
 };
 
-useEffect(() => {
-  Notifications.setNotificationHandler({
-    handleNotification: async () => ({
-      shouldShowAlert: true,
-      shouldPlaySound: true,
-      shouldSetBadge: false,
-      shouldShowBanner: true,
-      shouldShowList: true,
-    }),
-  });
-}, []);
-
 export default function Dashboard() {
   const router = useRouter();
 
@@ -62,58 +50,71 @@ export default function Dashboard() {
   const [refreshing, setRefreshing] = useState(false);
   const [countdown, setCountdown] = useState(5);
 
+  // ✅ FIX 1: Moved inside the component (was outside before — caused crash)
+  useEffect(() => {
+    Notifications.setNotificationHandler({
+      handleNotification: async () => ({
+        shouldShowAlert: true,
+        shouldPlaySound: true,
+        shouldSetBadge: false,
+        shouldShowBanner: true,
+        shouldShowList: true,
+      }),
+    });
+  }, []);
+
   useEffect(() => {
     registerForPushNotifications();
   }, []);
 
   const transformData = (data: any[] = []): DiningHall[] => {
-  if (!Array.isArray(data)) return [];
+    if (!Array.isArray(data)) return [];
 
-  return data
-    .filter((hall) => hall && typeof hall === "object")
-    .map((hall, index) => {
-      const count = Number(hall?.count ?? 0);
-      const zone = hall?.zone ?? `DH${index + 1}`;
+    return data
+      .filter((hall) => hall && typeof hall === "object")
+      .map((hall, index) => {
+        const count = Number(hall?.count ?? 0);
+        const zone = hall?.zone ?? `DH${index + 1}`;
 
-      const percentage = (count / 15) * 100;
+        const percentage = (count / 15) * 100;
 
-      let status: "Low" | "Moderate" | "Busy" = "Low";
-      if (percentage > 40) status = "Busy";
-      else if (percentage > 20) status = "Moderate";
+        let status: "Low" | "Moderate" | "Busy" = "Low";
+        if (percentage > 40) status = "Busy";
+        else if (percentage > 20) status = "Moderate";
 
-      return {
-        id: `dh${index + 1}`,
-        name: zone,
-        shortName: `DH${index + 1}`,
-        percentage,
-        capacity: 15,
-        count,
-        status,
-      };
-    });
-};
+        return {
+          id: `dh${index + 1}`,
+          name: zone,
+          shortName: `DH${index + 1}`,
+          percentage,
+          capacity: 15,
+          count,
+          status,
+        };
+      });
+  };
 
   const fetchData = async () => {
-  try {
-    const res = await axios.get("https://noq-1.onrender.com/api/dh/all");
+    try {
+      const res = await axios.get("https://noq-1.onrender.com/api/dh/all");
 
-    const data = res?.data;
+      const data = res?.data;
 
-    if (!data) return;
+      if (!data) return;
 
-    let rawData: any[] = [];
+      let rawData: any[] = [];
 
-    if (Array.isArray(data)) {
-      rawData = data;
-    } else if (typeof data === "object") {
-      rawData = Object.values(data);
+      if (Array.isArray(data)) {
+        rawData = data;
+      } else if (typeof data === "object") {
+        rawData = Object.values(data);
+      }
+
+      setDiningHalls(transformData(rawData));
+    } catch (err) {
+      console.log("API error ignored:", err);
     }
-
-    setDiningHalls(transformData(rawData));
-  } catch (err) {
-    console.log("API error ignored:", err);
-  }
-};
+  };
 
   useEffect(() => {
     fetchData();
@@ -189,10 +190,6 @@ export default function Dashboard() {
     </View>
   );
 }
-
-
-
-
 
 const CARD_WIDTH = (width - 56) / 2;
 
@@ -291,37 +288,27 @@ const styles = StyleSheet.create({
 
   // Logo
   logoContainer: {
-  width: 48,
-  height: 48,
-  borderRadius: 24,
-
-  backgroundColor: "#ffffff",
-
-  alignItems: "center",
-  justifyContent: "center",
-
-  // 🔥 Premium border (soft glass feel)
-  borderWidth: 1,
-  borderColor: "rgba(0,0,0,0.06)",
-
-  // 🔥 Depth (iOS + Android)
-  shadowColor: "#000",
-  shadowOffset: { width: 0, height: 6 },
-  shadowOpacity: 0.12,
-  shadowRadius: 12,
-  elevation: 6,
-
-  // 🔥 Floating effect
-  marginTop: -10,
-
-  // 🔥 Prevent overflow glitches
-  overflow: "hidden",
-},
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: "#ffffff",
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: "rgba(0,0,0,0.06)",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+    elevation: 6,
+    marginTop: -10,
+    overflow: "hidden",
+  },
   logo: {
-  width: 30,
-  height: 30,
-  resizeMode: "contain",
-},
+    width: 30,
+    height: 30,
+    resizeMode: "contain",
+  },
 
   // Stats Banner
   statsBanner: {
