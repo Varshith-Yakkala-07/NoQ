@@ -96,7 +96,8 @@ const messages = tokens.map((t) => ({
 
     console.log("Notification sent:", title);
   } catch (err) {
-    console.error("Notification error raised:", err.message);
+    console.log("error in notifications");
+    console.error("notification error : ", err.message);
   }
 };
 

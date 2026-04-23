@@ -16,10 +16,9 @@ import { Ionicons } from "@expo/vector-icons";
 import axios from "axios";
 import COLORS from "../../constants/colors";
 import * as Notifications from "expo-notifications";
-import { registerForPushNotifications } from "../utils/notifications"
+import { registerForPushNotifications } from "../utils/notifications";
 
 const { width } = Dimensions.get("window");
-const floatAnim = useRef(new Animated.Value(0)).current;
 
 interface DiningHall {
   id: string;
@@ -31,7 +30,6 @@ interface DiningHall {
   status: "Low" | "Moderate" | "Busy";
 }
 
-// ✅ STATUS (MATCH BACKEND)
 const getStatusInfo = (percentage: number) => {
   if (percentage <= 20)
     return { color: "#22c55e", text: "Low", icon: "checkmark-circle-outline" as const };
@@ -42,44 +40,42 @@ const getStatusInfo = (percentage: number) => {
   return { color: "#ef4444", text: "Busy", icon: "warning-outline" as const };
 };
 
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: false,
-
-    // ✅ ADD THESE TWO
-    shouldShowBanner: true,
-    shouldShowList: true,
-  }),
-});
+useEffect(() => {
+  Notifications.setNotificationHandler({
+    handleNotification: async () => ({
+      shouldShowAlert: true,
+      shouldPlaySound: true,
+      shouldSetBadge: false,
+      shouldShowBanner: true,
+      shouldShowList: true,
+    }),
+  });
+}, []);
 
 export default function Dashboard() {
   const router = useRouter();
 
+  const floatAnim = useRef(new Animated.Value(0)).current;
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+
   const [diningHalls, setDiningHalls] = useState<DiningHall[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [countdown, setCountdown] = useState(5);
-  const pulseAnim = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
-  registerForPushNotifications();
-}, []);
+    registerForPushNotifications();
+  }, []);
 
-useEffect(() => {
-  const sub = Notifications.addNotificationReceivedListener((notif) => {
-    console.log("Notification received:", notif);
-  });
+  const transformData = (data: any[] = []): DiningHall[] => {
+  if (!Array.isArray(data)) return [];
 
-  return () => sub.remove();
-}, []);
+  return data
+    .filter((hall) => hall && typeof hall === "object")
+    .map((hall, index) => {
+      const count = Number(hall?.count ?? 0);
+      const zone = hall?.zone ?? `DH${index + 1}`;
 
-  // ✅ TRANSFORM BACKEND DATA
-  const transformData = (data: any[]): DiningHall[] => {
-    return data.map((hall, index) => {
-      const percentage = hall.capacity
-        ? (hall.count / 15) * 100
-        : 0;
+      const percentage = (count / 15) * 100;
 
       let status: "Low" | "Moderate" | "Busy" = "Low";
       if (percentage > 40) status = "Busy";
@@ -87,43 +83,38 @@ useEffect(() => {
 
       return {
         id: `dh${index + 1}`,
-        name: hall.zone,
+        name: zone,
         shortName: `DH${index + 1}`,
         percentage,
         capacity: 15,
-        count: hall.count,
+        count,
         status,
       };
     });
-  };
+};
 
-  // ✅ FETCH DATA
   const fetchData = async () => {
-    try {
-      const res = await axios.get(
-        "https://noq-1.onrender.com/api/dh/all"
-      );
+  try {
+    const res = await axios.get("https://noq-1.onrender.com/api/dh/all");
 
-      const rawData = Object.values(res.data);
-      setDiningHalls(transformData(rawData));
-    } catch (err) {
-      console.error("Error fetching data:", err);
+    const data = res?.data;
+
+    if (!data) return;
+
+    let rawData: any[] = [];
+
+    if (Array.isArray(data)) {
+      rawData = data;
+    } else if (typeof data === "object") {
+      rawData = Object.values(data);
     }
-  };
 
-  // ✅ ANIMATION
-  useEffect(() => {
-    const pulse = Animated.loop(
-      Animated.sequence([
-        Animated.timing(pulseAnim, { toValue: 0.2, duration: 600, useNativeDriver: true }),
-        Animated.timing(pulseAnim, { toValue: 1, duration: 600, useNativeDriver: true }),
-      ])
-    );
-    pulse.start();
-    return () => pulse.stop();
-  }, []);
+    setDiningHalls(transformData(rawData));
+  } catch (err) {
+    console.log("API error ignored:", err);
+  }
+};
 
-  // ✅ AUTO REFRESH
   useEffect(() => {
     fetchData();
 
@@ -132,36 +123,24 @@ useEffect(() => {
       setCountdown(5);
     }, 5000);
 
-    const countInterval = setInterval(() => {
-      setCountdown((prev) => (prev <= 1 ? 5 : prev - 1));
-    }, 1000);
-
-    return () => {
-      clearInterval(interval);
-      clearInterval(countInterval);
-    };
+    return () => clearInterval(interval);
   }, []);
 
-  // ✅ MANUAL REFRESH
   const onRefresh = useCallback(() => {
     setRefreshing(true);
-    fetchData().finally(() => {
-      setRefreshing(false);
-      setCountdown(5);
-    });
+    fetchData().finally(() => setRefreshing(false));
   }, []);
 
   const handleCardPress = (hall: DiningHall) => {
-  router.push({
-  pathname: "/dh/[id]",
-  params: {
-    id: hall.id,
-    data: JSON.stringify(hall),
-  },
-});
-};
+    router.push({
+      pathname: "/dh/[id]",
+      params: {
+        id: hall.id,
+        data: JSON.stringify(hall),
+      },
+    });
+  };
 
-  // ✅ STATS
   const avgLoad =
     diningHalls.length > 0
       ? Math.round(
@@ -172,189 +151,45 @@ useEffect(() => {
 
   const busyCount = diningHalls.filter((h) => h.percentage > 40).length;
 
-  useEffect(() => {
-  const float = Animated.loop(
-    Animated.sequence([
-      Animated.timing(floatAnim, {
-        toValue: -4,
-        duration: 1500,
-        useNativeDriver: true,
-      }),
-      Animated.timing(floatAnim, {
-        toValue: 0,
-        duration: 1500,
-        useNativeDriver: true,
-      }),
-    ])
-  );
-
-  float.start();
-
-  return () => float.stop();
-}, []);
-
   return (
     <View style={styles.rootContainer}>
       <StatusBar barStyle="dark-content" />
 
-      <View style={styles.circleTopRight} />
-      <View style={styles.circleTopRightInner} />
-      <View style={styles.circleBottomLeft} />
-
       <ScrollView
-        style={styles.container}
-        contentContainerStyle={styles.scrollContent}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
-        showsVerticalScrollIndicator={false}
       >
-        {/* HEADER */}
-        <View style={styles.header}>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.greeting}>Live Status</Text>
+        <Text style={{ fontSize: 22, fontWeight: "bold", margin: 20 }}>
+          Dining Status
+        </Text>
 
-            <View style={styles.titleRow}>
-              <View style={styles.titleHighlight}>
-                <Text style={styles.title}>Dining Status</Text>
-              </View>
+        {diningHalls.map((hall) => {
+          const { color, text, icon } = getStatusInfo(hall.percentage);
 
-              <View style={styles.liveContainer}>
-                <Animated.View
-                  style={[styles.liveDot, { opacity: pulseAnim }]}
-                />
-                <Text style={styles.liveText}>LIVE</Text>
-              </View>
-            </View>
-          </View>
-
-          <Animated.View
-  style={[
-    styles.logoContainer,
-    { transform: [{ translateY: floatAnim }] },
-  ]}
-><Image
-              source={require("../../assets/images/noq.png")}
-              style={styles.logo}
-              resizeMode="contain"
-            /></Animated.View>
-            
-         
-        </View>
-
-        {/* STATS */}
-        <View style={styles.statsBanner}>
-          <View style={styles.statItem}>
-            <Text style={styles.statValue}>{avgLoad}%</Text>
-            <Text style={styles.statLabel}>Avg Load</Text>
-          </View>
-
-          <View style={styles.statDivider} />
-
-          <View style={styles.statItem}>
-            <Text
-              style={[
-                styles.statValue,
-                { color: busyCount > 0 ? "#ef4444" : "#22c55e" },
-              ]}
+          return (
+            <TouchableOpacity
+              key={hall.id}
+              onPress={() => handleCardPress(hall)}
+              style={styles.card}
             >
-              {busyCount}
-            </Text>
-            <Text style={styles.statLabel}>Busy Now</Text>
-          </View>
+              <Text style={{ fontSize: 18, fontWeight: "600" }}>
+                {hall.shortName}
+              </Text>
 
-          <View style={styles.statDivider} />
+              <Text style={{ color }}>{text}</Text>
 
-          <View style={styles.statItem}>
-            <Text style={styles.statValue}>{diningHalls.length}</Text>
-            <Text style={styles.statLabel}>Total DH</Text>
-          </View>
-        </View>
-
-        <Text style={styles.sectionTitle}>All Dining Halls</Text>
-
-        {/* GRID */}
-        <View style={styles.grid}>
-          {diningHalls.map((hall) => {
-            const { color, text, icon } = getStatusInfo(hall.percentage);
-
-            return (
-              <TouchableOpacity
-                key={hall.id}
-                style={styles.card}
-                onPress={() => handleCardPress(hall)}
-                activeOpacity={0.75}
-              >
-                <View style={styles.cardTop}>
-                  <View
-                    style={[styles.dhBadge, { backgroundColor: color + "20" }]}
-                  >
-                    <Text style={[styles.dhBadgeText, { color }]}>
-                      {hall.shortName}
-                    </Text>
-                  </View>
-                  <Ionicons
-                    name="chevron-forward"
-                    size={16}
-                    color={COLORS.textSecondary}
-                  />
-                </View>
-
-                <View style={styles.statusRow}>
-                  <Ionicons name={icon} size={14} color={color} />
-                  <Text style={[styles.statusText, { color }]}>{text}</Text>
-                </View>
-
-                <View style={styles.progressTrack}>
-                  <View
-                    style={[
-                      styles.progressFill,
-                      {
-                        width: `${hall.percentage}%`,
-                        backgroundColor: color,
-                      },
-                    ]}
-                  />
-                </View>
-
-                <View style={styles.cardBottom}>
-  {/* 🔥 PEOPLE COUNT = PRIMARY */}
-  <View style={styles.peopleRow}>
-    <Ionicons
-      name="people-outline"
-      size={14}
-      color={COLORS.textPrimary}
-    />
-    <Text style={styles.percentText}>
-      {hall.count} / {hall.capacity}
-    </Text>
-  </View>
-
-  {/* 📉 PERCENTAGE = SECONDARY */}
-  <Text style={styles.peopleText}>
-    {Math.round(hall.percentage)}%
-  </Text>
-</View>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
-
-        {/* FOOTER */}
-        <View style={styles.footerRow}>
-          <Ionicons
-            name="sync-outline"
-            size={13}
-            color={COLORS.textSecondary}
-          />
-          <Text style={styles.footerNote}>
-            Auto-updates in {countdown}s
-          </Text>
-        </View>
+              <Text>
+                {hall.count}/15 ({Math.round(hall.percentage)}%)
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
       </ScrollView>
     </View>
   );
 }
+
 
 
 

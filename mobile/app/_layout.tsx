@@ -10,6 +10,7 @@ export default function RootLayout() {
         <Stack.Screen name="loading" />
         <Stack.Screen name="(auth)" />
         <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="dh/[id]" />
       </Stack>
     </>
   );
