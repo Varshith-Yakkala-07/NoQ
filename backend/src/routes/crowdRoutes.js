@@ -158,6 +158,7 @@ const startBackgroundMonitoring = () => {
       await processDiningData(data);
       console.log("Checked dining halls...");
     } catch (err) {
+      console.log("background fetch error");
       console.error("Background fetch error:", err.message);
     }
   }, 10000); // every 10 seconds

@@ -10,7 +10,7 @@ router.get("/", protect, async (req,res) => {
     try {
         res.json(req.user);
     } catch (error) {
-        console.log("Not a valid user");
+        console.log("Not a valid user, not allowed");
         res.status(500).json({message : "User not found"});
     }
 });
