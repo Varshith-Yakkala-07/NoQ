@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "mobile",
-    "slug": "mobile",
+    "name": "NoQ",
+    "slug": "NoQ",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -20,7 +20,7 @@
   "predictiveBackGestureEnabled": false,
   "permissions": ["NOTIFICATIONS"],
   "useNextNotificationsApi": true,
-  "package": "com.anonymous.mobile"
+  "package": "com.noq.app"
 },
     "web": {
       "output": "static",
