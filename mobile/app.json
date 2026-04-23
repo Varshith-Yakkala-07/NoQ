@@ -21,7 +21,6 @@
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
       "permissions": [
-        "NOTIFICATIONS",
         "NOTIFICATIONS"
       ],
       "useNextNotificationsApi": true,
@@ -50,6 +49,13 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "f7c3e46c-b2b7-4e21-81dc-d5b5e277e527"
+      }
+    },
+    "owner": "ram-pushpa-varshith-yakkala"
   }
 }

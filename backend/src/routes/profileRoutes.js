@@ -81,6 +81,7 @@ router.put("/update", protect, upload.single("profileImage"), async (req,res) =>
     });
 
     } catch (error) {
+      
         console.log("Update profile pic error:", error);
         res.status(500).json({ message: "Internal server error" });
     }
