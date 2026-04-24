@@ -64,9 +64,9 @@ export default function Dashboard() {
     });
   }, []);
 
-  useEffect(() => {
+  /*useEffect(() => {
     registerForPushNotifications();
-  }, []);
+  }, []);*/
 
   // Floating logo
   useEffect(() => {

@@ -63,39 +63,64 @@ router.get("/:id", async (req, res) => {
 });
 
 router.post("/register-token", async (req, res) => {
-  const { token } = req.body;
+  try {
+    const { token } = req.body;
 
-  await Token.updateOne(
-  { token },
-  { token },
-  { upsert: true }
-);
+    console.log("Incoming token:", token);
 
-console.log("Token saved in DB:", token);
+    if (!token) {
+      console.log("No token received");
+      return res.status(400).json({ error: "Token missing" });
+    }
 
-  res.json({ success: true });
+    await Token.updateOne(
+      { token },
+      { token },
+      { upsert: true }
+    );
+
+    console.log("Token saved in DB:", token);
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error("Token save error:", err.message);
+    res.status(500).json({ error: "Server error" });
+  }
 });
+
+const chunkArray = (arr, size) => {
+  const chunks = [];
+  for (let i = 0; i < arr.length; i += size) {
+    chunks.push(arr.slice(i, i + size));
+  }
+  return chunks;
+};
 
 const sendNotification = async (title, body) => {
   try {
     const tokens = await Token.find();
 
-const messages = tokens.map((t) => ({
-  to: t.token,
-  sound: "default",
-  title,
-  body,
-}));
+    const messages = tokens.map((t) => ({
+      to: t.token,
+      sound: "default",
+      title,
+      body,
+    }));
 
-    await axios.post(EXPO_PUSH_URL, messages, {
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
+    // ✅ split into chunks of 100
+    const chunks = chunkArray(messages, 100);
 
-    console.log("Notification sent:", title);
+    for (const chunk of chunks) {
+      await axios.post(EXPO_PUSH_URL, chunk, {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+    }
+
+    console.log("Notification sent to all devices:", title);
   } catch (err) {
-    console.error("notification error : ", err.message);
+    console.error("notification error:", err.message);
   }
 };
 

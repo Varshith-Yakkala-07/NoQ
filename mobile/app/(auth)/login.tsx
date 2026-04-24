@@ -10,7 +10,7 @@ import {
   Image,
 } from "react-native";
 import { useRouter } from "expo-router";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 
@@ -19,6 +19,8 @@ import COLORS from "../../constants/colors";
 import { red } from "react-native-reanimated/lib/typescript/Colors";
 import { API } from "../../lib/api";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as Notifications from "expo-notifications";
+import { registerForPushNotifications } from "../utils/notifications";
 
 export default function Login() {
   const router = useRouter();
@@ -180,6 +182,7 @@ if (!emailTrim) {
     const { token, user } = res.data;
 
     await AsyncStorage.setItem("token", token);
+    await registerForPushNotifications();
     await AsyncStorage.setItem("user", JSON.stringify(user));
 
     router.replace("/(tabs)");
